@@ -170,7 +170,7 @@ export const DownloaderSetupBanner = () => {
             {showInstructions && (
               <div className="mt-3 p-3 rounded-lg bg-background/50 border border-border space-y-3">
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">1. First, make the scripts executable (one-time)</p>
+                  <p className="text-xs font-medium text-foreground">1. Make it executable (one-time only)</p>
                   <div className="flex gap-2 items-center">
                     <code className="flex-1 text-xs bg-muted px-2 py-1.5 rounded font-mono text-neon-cyan overflow-x-auto">
                       chmod +x ~/Downloads/local_downloader/*.command
@@ -188,19 +188,17 @@ export const DownloaderSetupBanner = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">2. Double-click install_macos.command</p>
-                  <p className="text-xs text-muted-foreground">This installs Python, FFmpeg, and ngrok automatically</p>
+                  <p className="text-xs font-medium text-foreground">2. Double-click SonicMix_Setup.command</p>
+                  <p className="text-xs text-muted-foreground">
+                    This does everything automatically - installs dependencies, asks for your free 
+                    <a href="https://ngrok.com" target="_blank" rel="noopener" className="text-neon-cyan hover:underline mx-1">ngrok.com</a> 
+                    token, and starts the server.
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">3. Double-click SonicMix_Downloader.command</p>
-                  <p className="text-xs text-muted-foreground">The URL will be copied to your clipboard - paste it above!</p>
-                </div>
-
-                <div className="pt-2 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Note:</strong> You'll need a free <a href="https://ngrok.com" target="_blank" rel="noopener" className="text-neon-cyan hover:underline">ngrok.com</a> account and run <code className="bg-muted px-1 rounded">ngrok config add-authtoken YOUR_TOKEN</code> once.
-                  </p>
+                  <p className="text-xs font-medium text-foreground">3. Paste the URL</p>
+                  <p className="text-xs text-muted-foreground">The URL is auto-copied to clipboard - just paste it above!</p>
                 </div>
               </div>
             )}
