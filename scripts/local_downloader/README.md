@@ -1,72 +1,126 @@
 # SonicMix Local Download Server
 
-This Python server runs on your local machine to download music from YouTube, Spotify (via YouTube search), and SoundCloud.
+Download music from YouTube, Spotify (via YouTube search), and SoundCloud directly to your SonicMix library.
 
-## Prerequisites
+## macOS Quick Start
+
+### 1. Install (One-time setup)
+
+1. **Download** or clone this folder to your Mac
+2. **Double-click** `install_macos.command`
+3. Follow the prompts to install dependencies
+
+The installer will automatically set up:
+- Python 3
+- FFmpeg (for audio conversion)
+- ngrok (for secure tunneling)
+- All required Python packages
+
+### 2. Configure ngrok (One-time)
+
+1. Create a free account at [ngrok.com](https://ngrok.com)
+2. Copy your auth token from the dashboard
+3. Open Terminal and run:
+   ```bash
+   ngrok config add-authtoken YOUR_TOKEN_HERE
+   ```
+
+### 3. Start the Server
+
+1. **Double-click** `SonicMix_Downloader.command`
+2. The ngrok URL will be **automatically copied** to your clipboard
+3. Paste the URL into SonicMix → Settings → Platform → Local Server URL
+
+That's it! You can now import tracks from any URL.
+
+---
+
+## Manual Setup (Advanced)
+
+If you prefer manual installation:
+
+### Prerequisites
 
 1. **Python 3.8+**
-2. **FFmpeg** - Required for audio conversion
-   - Windows: Download from https://ffmpeg.org/download.html and add to PATH
-   - Mac: `brew install ffmpeg`
-   - Linux: `sudo apt install ffmpeg`
+2. **FFmpeg** - `brew install ffmpeg`
+3. **ngrok** - `brew install ngrok/ngrok/ngrok`
 
-3. **ngrok** (free) - To expose your local server
-   - Sign up at https://ngrok.com
-   - Download and install ngrok
+### Installation
 
-## Setup
+```bash
+cd scripts/local_downloader
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-1. **Install dependencies:**
-   ```bash
-   cd scripts/local_downloader
-   pip install -r requirements.txt
-   ```
+### Running
 
-2. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Supabase credentials
-   ```
+Terminal 1:
+```bash
+source venv/bin/activate
+python server.py
+```
 
-3. **Start the server:**
-   ```bash
-   python server.py
-   ```
+Terminal 2:
+```bash
+ngrok http 5000
+```
 
-4. **Expose with ngrok:**
-   ```bash
-   ngrok http 5000
-   ```
-   
-   Copy the `https://xxxx.ngrok.io` URL
+Copy the ngrok URL to SonicMix settings.
 
-5. **Add to SonicMix:**
-   - Open the SonicMix app
-   - Go to Platform Settings
-   - Paste your ngrok URL as the "Local Downloader URL"
+---
 
-## How It Works
+## Configuration
 
-1. When you import a track URL in SonicMix, it sends a request to your local server
-2. The server downloads the audio in lossless WAV format
-3. If configured, it uploads the file to your Lovable Cloud storage
-4. The track becomes available in your SonicMix library
+Edit `.env` to customize:
 
-## API Endpoints
+```bash
+# Directory for downloaded files
+DOWNLOAD_DIR=./downloads
 
-- `GET /health` - Check if server is running
-- `POST /download` - Start a download job
-- `GET /status/<job_id>` - Check download progress
-- `POST /batch` - Download multiple tracks
+# Supabase credentials (for cloud upload)
+SUPABASE_URL=https://guvcwvqkxnrwcdmwbifh.supabase.co
+SUPABASE_SERVICE_KEY=your_service_key_here
+
+# Auto-upload to cloud storage
+UPLOAD_TO_CLOUD=true
+```
+
+---
 
 ## Supported Sources
 
-- **YouTube** - Direct URLs or searches
-- **Spotify** - Searches YouTube for the track (legal gray area)
-- **SoundCloud** - Direct URLs
+| Platform | Support |
+|----------|---------|
+| YouTube | ✅ Direct URLs |
+| YouTube Music | ✅ Direct URLs |
+| Spotify | ✅ Via YouTube search |
+| SoundCloud | ✅ Direct URLs |
 
-## Notes
+---
 
-- Downloaded files are saved to the `./downloads` folder by default
-- Files are converted to lossless WAV format
-- The server runs on port 5000 by default
+## Troubleshooting
+
+### "ngrok not authenticated"
+Run: `ngrok config add-authtoken YOUR_TOKEN`
+
+### "FFmpeg not found"
+Run: `brew install ffmpeg`
+
+### "Permission denied"
+Run: `chmod +x *.command`
+
+### Server won't start
+Check if port 5000 is in use: `lsof -i :5000`
+
+---
+
+## How It Works
+
+1. You paste a track URL in SonicMix
+2. SonicMix sends the URL to your local server (via ngrok)
+3. The server downloads the audio in lossless WAV format
+4. If configured, uploads to your cloud storage
+5. Track appears in your SonicMix library
