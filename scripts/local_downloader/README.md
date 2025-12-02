@@ -1,19 +1,27 @@
 # SonicMix Local Download Server
 
-Download music from YouTube, Spotify (via YouTube search), and SoundCloud directly to your SonicMix library.
+Download music from YouTube, Spotify, and SoundCloud in lossless quality.
 
-## macOS Quick Start
+## macOS - One Click Setup
 
-### 1. Install (One-time setup)
+### Quick Start
 
 1. **Download** this folder to your Mac
-2. **Make scripts executable** - Open Terminal and run:
+
+2. **Make it executable** - Open Terminal (one time only):
    ```bash
    chmod +x ~/Downloads/local_downloader/*.command
    ```
-   *(Adjust the path if you extracted the files elsewhere)*
-3. **Double-click** `install_macos.command`
-4. Follow the prompts to install dependencies
+
+3. **Double-click** `SonicMix_Setup.command`
+
+That's it! The script will:
+- ✅ Install Homebrew (if needed)
+- ✅ Install Python, FFmpeg, ngrok
+- ✅ Ask for your ngrok token (free at ngrok.com)
+- ✅ Start the server and copy the URL to your clipboard
+
+Just paste the URL into SonicMix!
 
 The installer will automatically set up:
 - Python 3
