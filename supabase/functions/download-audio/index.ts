@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Simple URL validation
 function isValidUrl(url: string): boolean {
   try {
     new URL(url);
@@ -16,7 +15,6 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-// Extract video/audio info from URL
 function extractPlatformInfo(url: string): { platform: string; id: string | null } {
   const urlObj = new URL(url);
   const hostname = urlObj.hostname.toLowerCase();
@@ -30,6 +28,10 @@ function extractPlatformInfo(url: string): { platform: string; id: string | null
   
   if (hostname.includes("soundcloud.com")) {
     return { platform: "soundcloud", id: urlObj.pathname };
+  }
+
+  if (hostname.includes("spotify.com")) {
+    return { platform: "spotify", id: urlObj.pathname };
   }
 
   return { platform: "unknown", id: null };
@@ -55,47 +57,133 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // For now, we'll create a track entry with the source URL
-    // Actual audio download would require yt-dlp or similar service
-    // which isn't available in edge functions
-    
-    // Create track entry in database
+    // Try Cobalt API for downloading (free, open source)
+    // https://github.com/imputnet/cobalt
+    let downloadUrl: string | null = null;
+    let extractedTitle = title || `Track from ${platform}`;
+
+    try {
+      console.log("Trying Cobalt API...");
+      const cobaltResponse = await fetch("https://api.cobalt.tools/", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: url,
+          audioFormat: "mp3",
+          isAudioOnly: true,
+          downloadMode: "audio",
+        }),
+      });
+
+      if (cobaltResponse.ok) {
+        const cobaltData = await cobaltResponse.json();
+        console.log("Cobalt response:", cobaltData);
+        
+        if (cobaltData.url) {
+          downloadUrl = cobaltData.url;
+          extractedTitle = cobaltData.filename?.replace(/\.[^/.]+$/, "") || extractedTitle;
+        } else if (cobaltData.audio) {
+          downloadUrl = cobaltData.audio;
+        }
+      }
+    } catch (cobaltError) {
+      console.log("Cobalt API error:", cobaltError);
+    }
+
+    // If no download URL, just register the track
+    if (!downloadUrl) {
+      const { data: track, error: insertError } = await supabase
+        .from("tracks")
+        .insert({
+          title: extractedTitle,
+          artist: artist || "Unknown Artist",
+          platform: platform,
+          source_url: url,
+          analysis_status: "pending_download",
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(`Failed to create track: ${insertError.message}`);
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
+        track: track,
+        message: "Track registered. Download service temporarily unavailable - try uploading the file directly.",
+        requiresManualDownload: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Download the audio file
+    console.log("Downloading audio from:", downloadUrl);
+    const audioResponse = await fetch(downloadUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      },
+    });
+
+    if (!audioResponse.ok) {
+      throw new Error("Failed to download audio file");
+    }
+
+    const audioBuffer = await audioResponse.arrayBuffer();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`;
+    const filePath = `downloads/${fileName}`;
+
+    console.log(`Uploading ${audioBuffer.byteLength} bytes to storage...`);
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from("audio-files")
+      .upload(filePath, audioBuffer, {
+        contentType: "audio/mpeg",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw new Error(`Failed to upload: ${uploadError.message}`);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("audio-files")
+      .getPublicUrl(filePath);
+
+    // Create track entry
     const { data: track, error: insertError } = await supabase
       .from("tracks")
       .insert({
-        title: title || `Track from ${platform}`,
+        title: extractedTitle,
         artist: artist || "Unknown Artist",
         platform: platform,
         source_url: url,
-        analysis_status: "pending",
+        audio_file_path: filePath,
+        analysis_status: "uploaded",
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error("Insert error:", insertError);
       throw new Error(`Failed to create track: ${insertError.message}`);
     }
 
-    console.log("Track created:", track.id);
-
-    // Note: For actual audio download from YouTube/SoundCloud,
-    // you would need:
-    // 1. A separate backend service with yt-dlp
-    // 2. Or use a third-party API service
-    // 3. Or require users to provide direct audio URLs
+    console.log("Track created successfully:", track.id);
 
     return new Response(JSON.stringify({ 
       success: true,
       track: {
-        id: track.id,
-        title: track.title,
-        artist: track.artist,
-        platform: track.platform,
-        source_url: track.source_url,
-        analysis_status: track.analysis_status,
+        ...track,
+        audioUrl: urlData.publicUrl,
       },
-      message: "Track registered. Note: Direct audio download from streaming platforms requires additional backend infrastructure. For now, please upload the audio file directly."
+      audioUrl: urlData.publicUrl,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -103,7 +191,8 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in download-audio:", error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Unknown error" 
+      error: error instanceof Error ? error.message : "Unknown error",
+      suggestion: "Try a different URL or upload the audio file directly"
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
