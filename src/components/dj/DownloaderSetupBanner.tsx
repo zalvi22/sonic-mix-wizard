@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Server, Download, Check, X, Loader2, Copy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Server, Download, Check, X, Loader2, Copy, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -164,41 +164,50 @@ export const DownloaderSetupBanner = () => {
               className="text-muted-foreground hover:text-foreground gap-1 p-0 h-auto"
             >
               {showInstructions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              {showInstructions ? 'Hide setup instructions' : 'First time? View setup instructions'}
+              {showInstructions ? 'Hide setup' : "Don't have a server? Quick setup →"}
             </Button>
 
             {showInstructions && (
-              <div className="mt-3 p-3 rounded-lg bg-background/50 border border-border space-y-3">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">1. Make it executable (one-time only)</p>
+              <div className="mt-3 p-3 rounded-lg bg-background/50 border border-border space-y-4">
+                <div>
+                  <p className="text-xs font-medium text-foreground mb-2">
+                    One-click install - copy this and paste into Terminal:
+                  </p>
                   <div className="flex gap-2 items-center">
-                    <code className="flex-1 text-xs bg-muted px-2 py-1.5 rounded font-mono text-neon-cyan overflow-x-auto">
-                      chmod +x ~/Downloads/local_downloader/*.command
+                    <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono text-neon-cyan overflow-x-auto">
+                      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sonicmix/downloader/main/install.sh)"
                     </code>
                     <Button 
-                      variant="ghost" 
+                      variant="secondary" 
                       size="sm"
-                      onClick={() => copyCommand('chmod +x ~/Downloads/local_downloader/*.command')}
-                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText('/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sonicmix/downloader/main/install.sh)"');
+                        toast({ title: "Copied!", description: "Paste into Terminal to install" });
+                      }}
+                      className="shrink-0 gap-1"
                     >
                       <Copy className="w-3 h-3" />
+                      Copy
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Open Terminal app and paste this command</p>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">2. Double-click SonicMix_Setup.command</p>
-                  <p className="text-xs text-muted-foreground">
-                    This does everything automatically - installs dependencies, asks for your free 
-                    <a href="https://ngrok.com" target="_blank" rel="noopener" className="text-neon-cyan hover:underline mx-1">ngrok.com</a> 
-                    token, and starts the server.
-                  </p>
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <Terminal className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="mb-1">
+                      <strong>How to open Terminal:</strong> Press <kbd className="px-1 py-0.5 bg-muted rounded text-foreground">⌘</kbd> + <kbd className="px-1 py-0.5 bg-muted rounded text-foreground">Space</kbd>, type "Terminal", press Enter
+                    </p>
+                    <p>
+                      The installer handles everything automatically. When done, your URL will be copied to clipboard - just paste it above!
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">3. Paste the URL</p>
-                  <p className="text-xs text-muted-foreground">The URL is auto-copied to clipboard - just paste it above!</p>
+
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground">
+                    Requires a free <a href="https://ngrok.com" target="_blank" rel="noopener" className="text-neon-cyan hover:underline">ngrok.com</a> account (you'll be prompted for your token during install)
+                  </p>
                 </div>
               </div>
             )}
