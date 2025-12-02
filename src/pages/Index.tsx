@@ -7,7 +7,7 @@ import { TrackBrowser } from '@/components/dj/TrackBrowser';
 import { MashupBuilder } from '@/components/dj/MashupBuilder';
 import { SonicPiGenerator } from '@/components/dj/SonicPiGenerator';
 import { AIPromptInput } from '@/components/dj/AIPromptInput';
-import { PlatformConnector } from '@/components/dj/PlatformConnector';
+import { DownloaderSetupBanner } from '@/components/dj/DownloaderSetupBanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const DEFAULT_DECK_STATE: DeckState = {
@@ -96,11 +96,10 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
+      {/* Setup Banner */}
+      <DownloaderSetupBanner />
+      
       <main className="flex-1 p-4 lg:p-6">
-        {/* Platform Connector */}
-        <div className="flex justify-end mb-4">
-          <PlatformConnector />
-        </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-6">
