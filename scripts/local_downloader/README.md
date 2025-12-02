@@ -6,9 +6,14 @@ Download music from YouTube, Spotify (via YouTube search), and SoundCloud direct
 
 ### 1. Install (One-time setup)
 
-1. **Download** or clone this folder to your Mac
-2. **Double-click** `install_macos.command`
-3. Follow the prompts to install dependencies
+1. **Download** this folder to your Mac
+2. **Make scripts executable** - Open Terminal and run:
+   ```bash
+   chmod +x ~/Downloads/local_downloader/*.command
+   ```
+   *(Adjust the path if you extracted the files elsewhere)*
+3. **Double-click** `install_macos.command`
+4. Follow the prompts to install dependencies
 
 The installer will automatically set up:
 - Python 3
