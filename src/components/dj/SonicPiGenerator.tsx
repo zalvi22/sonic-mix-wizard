@@ -32,10 +32,14 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode
   const [isGenerating, setIsGenerating] = useState(false);
   const [useAICode, setUseAICode] = useState(false);
 
-  const generateSonicPiCode = () => {
-    setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 500);
+  // Auto-switch to AI code when it's received
+  React.useEffect(() => {
+    if (aiGeneratedCode) {
+      setUseAICode(true);
+    }
+  }, [aiGeneratedCode]);
 
+  const generateSonicPiCode = React.useMemo(() => {
     // Determine master BPM from deck settings
     const masterBpm = deckA.track?.bpm || deckB.track?.bpm || 120;
     const masterKey = deckA.track?.key || deckB.track?.key || 'Am';
@@ -255,17 +259,10 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode
     lines.push('# • Press Run again to hot-swap changes live!');
 
     return lines.join('\n');
-  };
+  }, [deckA, deckB, mashupElements]);
 
   // Use AI-generated code if available and enabled, otherwise use default generator
-  const code = (useAICode && aiGeneratedCode) ? aiGeneratedCode : generateSonicPiCode();
-
-  // Auto-switch to AI code when it's received
-  React.useEffect(() => {
-    if (aiGeneratedCode) {
-      setUseAICode(true);
-    }
-  }, [aiGeneratedCode]);
+  const code = (useAICode && aiGeneratedCode) ? aiGeneratedCode : generateSonicPiCode;
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(code);
@@ -315,6 +312,7 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode
             className="h-8 w-8"
             onClick={() => {
               setIsGenerating(true);
+              setTimeout(() => setIsGenerating(false), 500);
               if (useAICode) setUseAICode(false);
             }}
             title="Regenerate default"
