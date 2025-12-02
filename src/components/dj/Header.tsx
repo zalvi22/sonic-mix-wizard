@@ -1,6 +1,6 @@
 import { Disc3, Settings, HelpCircle, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PlatformConnector } from './PlatformConnector';
 
 export const Header = () => {
   return (
@@ -22,7 +22,12 @@ export const Header = () => {
         </div>
       </div>
 
-      {/* Status */}
+      {/* Center - Platform Connections */}
+      <div className="flex items-center gap-4">
+        <PlatformConnector />
+      </div>
+
+      {/* Status & Actions */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border">
           <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
