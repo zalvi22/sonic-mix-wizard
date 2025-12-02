@@ -2,3 +2,9 @@ project_id = "guvcwvqkxnrwcdmwbifh"
 
 [functions.generate-sonic-pi]
 verify_jwt = false
+
+[functions.separate-stems]
+verify_jwt = false
+
+[functions.download-audio]
+verify_jwt = false
