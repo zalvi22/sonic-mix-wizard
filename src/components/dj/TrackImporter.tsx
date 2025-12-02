@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Upload, Link, Loader2, Music, X, Scissors, Server } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Upload, Link, Loader2, Music, X, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
-import { useLocalDownloader } from './LocalDownloaderSettings';
 
 interface TrackImporterProps {
   onTrackImported: (track: any) => void;
@@ -22,8 +21,6 @@ export const TrackImporter = ({ onTrackImported }: TrackImporterProps) => {
   const [url, setUrl] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState<string>('');
-  
-  const { isConfigured: hasLocalServer, downloadTrack, checkStatus } = useLocalDownloader();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,96 +137,39 @@ export const TrackImporter = ({ onTrackImported }: TrackImporterProps) => {
     }
 
     setIsDownloading(true);
-    setDownloadStatus('Starting...');
+    setDownloadStatus('Processing...');
 
     try {
-      // If local server is configured, use it for actual download
-      if (hasLocalServer) {
-        setDownloadStatus('Sending to local server...');
-        
-        // Extract title from URL or use default
-        const urlObj = new URL(url.trim());
-        const defaultTitle = urlObj.pathname.split('/').pop() || 'Downloaded Track';
-        
-        // Determine platform
-        let platform = 'unknown';
-        if (url.includes('youtube.com') || url.includes('youtu.be')) {
-          platform = 'youtube';
-        } else if (url.includes('soundcloud.com')) {
-          platform = 'soundcloud';
-        } else if (url.includes('spotify.com')) {
-          platform = 'spotify';
-        }
-        
-        const result = await downloadTrack({
-          url: url.trim(),
-          title: defaultTitle,
-          artist: 'Unknown Artist',
-          platform,
-        });
-        
-        if (result.job_id) {
-          // Poll for status
-          setDownloadStatus('Downloading...');
-          let complete = false;
-          let attempts = 0;
-          
-          while (!complete && attempts < 120) { // 10 minute timeout
-            await new Promise(r => setTimeout(r, 5000));
-            const status = await checkStatus(result.job_id);
-            
-            setDownloadStatus(status.status || 'Processing...');
-            
-            if (status.status === 'complete') {
-              complete = true;
-              toast({
-                title: "Download complete!",
-                description: status.cloud_url 
-                  ? "Track uploaded to your library" 
-                  : `Saved locally: ${status.filename}`,
-              });
-              
-              // Refresh the track list
-              if (status.cloud_url) {
-                onTrackImported({
-                  id: result.job_id,
-                  title: status.filename?.replace('.wav', '') || defaultTitle,
-                  artist: 'Unknown Artist',
-                  platform,
-                  audioUrl: status.cloud_url,
-                });
-              }
-            } else if (status.status === 'error') {
-              throw new Error(status.error || 'Download failed');
-            }
-            
-            attempts++;
-          }
-          
-          if (!complete) {
-            throw new Error('Download timeout');
-          }
-        }
-      } else {
-        // Fallback to edge function (registers track only)
-        const { data, error } = await supabase.functions.invoke('download-audio', {
-          body: { url: url.trim() },
-        });
+      // Use cloud download (no local server needed!)
+      setDownloadStatus('Downloading audio...');
+      
+      const { data, error } = await supabase.functions.invoke('download-audio', {
+        body: { url: url.trim() },
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data?.error) {
-          throw new Error(data.error);
-        }
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
+      if (data?.requiresManualDownload) {
         toast({
           title: "Track registered",
-          description: "Connect local server to download actual audio file",
+          description: data.message || "Upload the audio file directly for now",
         });
+      } else {
+        toast({
+          title: "Track imported!",
+          description: `"${data.track?.title || 'Track'}" added to your library`,
+        });
+      }
 
-        if (data.track) {
-          onTrackImported(data.track);
-        }
+      if (data.track) {
+        onTrackImported({
+          ...data.track,
+          audioUrl: data.audioUrl || data.track.audioUrl,
+        });
       }
 
       setUrl('');
@@ -309,18 +249,6 @@ export const TrackImporter = ({ onTrackImported }: TrackImporterProps) => {
 
           <TabsContent value="url" className="space-y-4 mt-4">
             <div className="space-y-4">
-              {/* Local server status indicator */}
-              <div className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-                hasLocalServer 
-                  ? 'bg-neon-green/10 text-neon-green border border-neon-green/30' 
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                <Server className="w-4 h-4" />
-                {hasLocalServer 
-                  ? 'Local server connected - Downloads will be in lossless WAV' 
-                  : 'Connect local server for full downloads'}
-              </div>
-
               <div className="flex gap-2">
                 <Input
                   placeholder="https://youtube.com/watch?v=... or soundcloud.com/..."
@@ -361,15 +289,13 @@ export const TrackImporter = ({ onTrackImported }: TrackImporterProps) => {
                 ) : (
                   <>
                     <Link className="w-4 h-4 mr-2" />
-                    {hasLocalServer ? 'Download & Import' : 'Register Track'}
+                    Import Track
                   </>
                 )}
               </Button>
 
               <p className="text-xs text-muted-foreground text-center">
-                {hasLocalServer 
-                  ? 'Audio will be downloaded in lossless WAV and uploaded to your library'
-                  : 'Connect local server in settings to download actual audio'}
+                Supports YouTube & SoundCloud links
               </p>
             </div>
           </TabsContent>
