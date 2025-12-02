@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.download-audio]
 verify_jwt = false
+
+[functions.spotify-auth]
+verify_jwt = false
+
+[functions.spotify-api]
+verify_jwt = false
