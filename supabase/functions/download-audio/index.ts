@@ -6,10 +6,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Allowlisted domains for security - prevents SSRF attacks
+const ALLOWED_DOMAINS = [
+  "youtube.com",
+  "www.youtube.com",
+  "youtu.be",
+  "soundcloud.com",
+  "www.soundcloud.com",
+  "spotify.com",
+  "open.spotify.com",
+  "music.youtube.com",
+];
+
 function isValidUrl(url: string): boolean {
   try {
     new URL(url);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedDomain(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    return ALLOWED_DOMAINS.some(domain => 
+      hostname === domain || hostname.endsWith(`.${domain}`)
+    );
   } catch {
     return false;
   }
@@ -37,20 +61,53 @@ function extractPlatformInfo(url: string): { platform: string; id: string | null
   return { platform: "unknown", id: null };
 }
 
+// Input validation
+function validateInput(data: unknown): { url: string; title?: string; artist?: string } {
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid request body");
+  }
+
+  const { url, title, artist } = data as Record<string, unknown>;
+
+  if (!url || typeof url !== "string") {
+    throw new Error("URL is required and must be a string");
+  }
+
+  if (url.length > 2048) {
+    throw new Error("URL is too long (max 2048 characters)");
+  }
+
+  if (!isValidUrl(url)) {
+    throw new Error("Invalid URL format");
+  }
+
+  if (!isAllowedDomain(url)) {
+    throw new Error("URL domain not allowed. Supported: YouTube, SoundCloud, Spotify");
+  }
+
+  // Validate optional fields
+  const validatedTitle = title && typeof title === "string" 
+    ? title.slice(0, 255) // Limit title length
+    : undefined;
+
+  const validatedArtist = artist && typeof artist === "string"
+    ? artist.slice(0, 255) // Limit artist length
+    : undefined;
+
+  return { url, title: validatedTitle, artist: validatedArtist };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { url, title, artist } = await req.json();
-
-    if (!url || !isValidUrl(url)) {
-      throw new Error("Valid URL is required");
-    }
+    const rawData = await req.json();
+    const { url, title, artist } = validateInput(rawData);
 
     const { platform, id } = extractPlatformInfo(url);
-    console.log(`Processing ${platform} URL:`, url);
+    console.log(`Processing ${platform} URL for track`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -58,7 +115,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Try Cobalt API for downloading (free, open source)
-    // https://github.com/imputnet/cobalt
     let downloadUrl: string | null = null;
     let extractedTitle = title || `Track from ${platform}`;
 
@@ -80,7 +136,7 @@ serve(async (req) => {
 
       if (cobaltResponse.ok) {
         const cobaltData = await cobaltResponse.json();
-        console.log("Cobalt response:", cobaltData);
+        console.log("Cobalt API responded successfully");
         
         if (cobaltData.url) {
           downloadUrl = cobaltData.url;
@@ -90,7 +146,7 @@ serve(async (req) => {
         }
       }
     } catch (cobaltError) {
-      console.log("Cobalt API error:", cobaltError);
+      console.log("Cobalt API unavailable");
     }
 
     // If no download URL, just register the track
@@ -122,7 +178,7 @@ serve(async (req) => {
     }
 
     // Download the audio file
-    console.log("Downloading audio from:", downloadUrl);
+    console.log("Downloading audio file...");
     const audioResponse = await fetch(downloadUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
@@ -134,10 +190,16 @@ serve(async (req) => {
     }
 
     const audioBuffer = await audioResponse.arrayBuffer();
+    
+    // Limit file size to 100MB
+    if (audioBuffer.byteLength > 100 * 1024 * 1024) {
+      throw new Error("File too large (max 100MB)");
+    }
+
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`;
     const filePath = `downloads/${fileName}`;
 
-    console.log(`Uploading ${audioBuffer.byteLength} bytes to storage...`);
+    console.log(`Uploading ${Math.round(audioBuffer.byteLength / 1024)}KB to storage...`);
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
@@ -175,7 +237,7 @@ serve(async (req) => {
       throw new Error(`Failed to create track: ${insertError.message}`);
     }
 
-    console.log("Track created successfully:", track.id);
+    console.log("Track created successfully");
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -194,7 +256,7 @@ serve(async (req) => {
       error: error instanceof Error ? error.message : "Unknown error",
       suggestion: "Try a different URL or upload the audio file directly"
     }), {
-      status: 500,
+      status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
