@@ -1,0 +1,4 @@
+project_id = "guvcwvqkxnrwcdmwbifh"
+
+[functions.generate-sonic-pi]
+verify_jwt = false

@@ -6,6 +6,7 @@ import { Mixer } from '@/components/dj/Mixer';
 import { TrackBrowser } from '@/components/dj/TrackBrowser';
 import { MashupBuilder } from '@/components/dj/MashupBuilder';
 import { SonicPiGenerator } from '@/components/dj/SonicPiGenerator';
+import { AIPromptInput } from '@/components/dj/AIPromptInput';
 import { PlatformConnector } from '@/components/dj/PlatformConnector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -36,6 +37,7 @@ const Index = () => {
   const [deckB, setDeckB] = useState<DeckState>(DEFAULT_DECK_STATE);
   const [mixer, setMixer] = useState<MixerState>(DEFAULT_MIXER_STATE);
   const [mashupElements, setMashupElements] = useState<MashupElement[]>([]);
+  const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
 
   const updateDeckA = useCallback((updates: Partial<DeckState>) => {
     setDeckA(prev => ({ ...prev, ...updates }));
@@ -134,12 +136,21 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Mashup & Code Generator */}
-          <div className="xl:col-span-3">
-            <Tabs defaultValue="mashup" className="h-[600px] flex flex-col">
+          {/* AI Composer & Code Generator */}
+          <div className="xl:col-span-3 space-y-4">
+            {/* AI Prompt Input */}
+            <AIPromptInput
+              deckA={deckA}
+              deckB={deckB}
+              mashupElements={mashupElements}
+              onCodeGenerated={setAiGeneratedCode}
+            />
+            
+            {/* Tabs for Mashup and Code */}
+            <Tabs defaultValue="code" className="h-[380px] flex flex-col">
               <TabsList className="grid grid-cols-2 mb-4">
                 <TabsTrigger value="mashup">Mashup</TabsTrigger>
-                <TabsTrigger value="code">Sonic Pi</TabsTrigger>
+                <TabsTrigger value="code">Sonic Pi Code</TabsTrigger>
               </TabsList>
               <TabsContent value="mashup" className="flex-1 mt-0">
                 <MashupBuilder 
@@ -153,6 +164,7 @@ const Index = () => {
                   deckA={deckA}
                   deckB={deckB}
                   mashupElements={mashupElements}
+                  aiGeneratedCode={aiGeneratedCode}
                 />
               </TabsContent>
             </Tabs>

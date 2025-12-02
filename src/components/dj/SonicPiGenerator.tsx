@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Code, Copy, Download, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Code, Copy, Download, RefreshCw, Sparkles, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MashupElement, DeckState } from '@/types/dj';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ interface SonicPiGeneratorProps {
   deckA: DeckState;
   deckB: DeckState;
   mashupElements: MashupElement[];
+  aiGeneratedCode?: string;
 }
 
 // Convert musical key to Sonic Pi format
@@ -26,9 +27,10 @@ const getScaleType = (key: string): string => {
   return key.toLowerCase().includes('m') ? ':minor' : ':major';
 };
 
-export const SonicPiGenerator = ({ deckA, deckB, mashupElements }: SonicPiGeneratorProps) => {
+export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode }: SonicPiGeneratorProps) => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [useAICode, setUseAICode] = useState(false);
 
   const generateSonicPiCode = () => {
     setIsGenerating(true);
@@ -255,7 +257,15 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements }: SonicPiGenera
     return lines.join('\n');
   };
 
-  const code = generateSonicPiCode();
+  // Use AI-generated code if available and enabled, otherwise use default generator
+  const code = (useAICode && aiGeneratedCode) ? aiGeneratedCode : generateSonicPiCode();
+
+  // Auto-switch to AI code when it's received
+  React.useEffect(() => {
+    if (aiGeneratedCode) {
+      setUseAICode(true);
+    }
+  }, [aiGeneratedCode]);
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(code);
@@ -285,15 +295,29 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements }: SonicPiGenera
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-display text-lg font-bold neon-text-green">
           <Code className="w-5 h-5 inline-block mr-2" />
-          SONIC PI CODE
+          {useAICode && aiGeneratedCode ? 'AI GENERATED' : 'SONIC PI CODE'}
         </h3>
         <div className="flex items-center gap-2">
+          {aiGeneratedCode && (
+            <Button
+              variant={useAICode ? "default" : "ghost"}
+              size="icon"
+              className={cn("h-8 w-8", useAICode && "bg-neon-magenta/20 text-neon-magenta")}
+              onClick={() => setUseAICode(!useAICode)}
+              title={useAICode ? "Show default code" : "Show AI code"}
+            >
+              <Sparkles className="w-4 h-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => setIsGenerating(true)}
-            title="Regenerate"
+            onClick={() => {
+              setIsGenerating(true);
+              if (useAICode) setUseAICode(false);
+            }}
+            title="Regenerate default"
           >
             <RefreshCw className={cn("w-4 h-4", isGenerating && "animate-spin")} />
           </Button>
