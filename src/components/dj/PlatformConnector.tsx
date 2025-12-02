@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { ExternalLink, Check, AlertCircle, Server } from 'lucide-react';
+import { ExternalLink, Check, Server, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Platform } from '@/types/dj';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { LocalDownloaderSettings } from './LocalDownloaderSettings';
+import { useSpotify } from '@/hooks/useSpotify';
+import { SpotifyBrowser } from './SpotifyBrowser';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 interface PlatformStatus {
   platform: Platform;
@@ -14,51 +17,84 @@ interface PlatformStatus {
   color: string;
 }
 
-const PLATFORMS: PlatformStatus[] = [
-  {
-    platform: 'spotify',
-    connected: false,
-    label: 'Spotify',
-    description: 'Search & download tracks via local server',
-    color: 'from-green-500 to-green-700',
-  },
-  {
-    platform: 'soundcloud',
-    connected: false,
-    label: 'SoundCloud',
-    description: 'Download tracks from SoundCloud URLs',
-    color: 'from-orange-500 to-orange-700',
-  },
-  {
-    platform: 'youtube',
-    connected: false,
-    label: 'YouTube Music',
-    description: 'Download audio from YouTube videos',
-    color: 'from-red-500 to-red-700',
-  },
-  {
-    platform: 'local',
-    connected: true,
-    label: 'Local Files',
-    description: 'Upload and use audio files from your computer',
-    color: 'from-cyan-500 to-cyan-700',
-  },
-];
-
 export const PlatformConnector = () => {
-  const [platforms, setPlatforms] = useState(PLATFORMS);
+  const { isConnected: spotifyConnected, connect: connectSpotify, user: spotifyUser } = useSpotify();
+  const [soundcloudConnected, setSoundcloudConnected] = useState(false);
+  const [youtubeConnected, setYoutubeConnected] = useState(false);
+  const [spotifyBrowserOpen, setSpotifyBrowserOpen] = useState(false);
 
-  const toggleConnection = (platform: Platform) => {
-    setPlatforms(prev => 
-      prev.map(p => 
-        p.platform === platform ? { ...p, connected: !p.connected } : p
-      )
-    );
+  const platforms: PlatformStatus[] = [
+    {
+      platform: 'spotify',
+      connected: spotifyConnected,
+      label: 'Spotify',
+      description: spotifyConnected ? `Connected as ${spotifyUser?.display_name}` : 'Search & browse your Spotify library',
+      color: 'from-green-500 to-green-700',
+    },
+    {
+      platform: 'soundcloud',
+      connected: soundcloudConnected,
+      label: 'SoundCloud',
+      description: 'Download tracks from SoundCloud URLs',
+      color: 'from-orange-500 to-orange-700',
+    },
+    {
+      platform: 'youtube',
+      connected: youtubeConnected,
+      label: 'YouTube Music',
+      description: 'Download audio from YouTube videos',
+      color: 'from-red-500 to-red-700',
+    },
+    {
+      platform: 'local',
+      connected: true,
+      label: 'Local Files',
+      description: 'Upload and use audio files from your computer',
+      color: 'from-cyan-500 to-cyan-700',
+    },
+  ];
+
+  const handlePlatformClick = (platform: Platform) => {
+    switch (platform) {
+      case 'spotify':
+        if (!spotifyConnected) {
+          connectSpotify();
+        } else {
+          setSpotifyBrowserOpen(true);
+        }
+        break;
+      case 'soundcloud':
+        setSoundcloudConnected(!soundcloudConnected);
+        break;
+      case 'youtube':
+        setYoutubeConnected(!youtubeConnected);
+        break;
+    }
   };
 
   return (
     <div className="flex items-center gap-2">
       <LocalDownloaderSettings />
+      
+      {/* Quick Spotify access button when connected */}
+      {spotifyConnected && (
+        <Sheet open={spotifyBrowserOpen} onOpenChange={setSpotifyBrowserOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 border-green-500/50 hover:bg-green-500/10">
+              <div className="w-4 h-4 rounded-full bg-[#1DB954] flex items-center justify-center">
+                <Music className="w-2.5 h-2.5 text-black" />
+              </div>
+              Spotify
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[500px] sm:w-[600px] p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Spotify Browser</SheetTitle>
+            </SheetHeader>
+            <SpotifyBrowser />
+          </SheetContent>
+        </Sheet>
+      )}
       
       <Dialog>
         <DialogTrigger asChild>
@@ -71,7 +107,7 @@ export const PlatformConnector = () => {
           <DialogHeader>
             <DialogTitle className="font-display neon-text-cyan">Connect Music Platforms</DialogTitle>
             <DialogDescription>
-              Enable platforms to search and download music (requires local server)
+              Connect to streaming platforms to browse and import tracks
             </DialogDescription>
           </DialogHeader>
           
@@ -101,7 +137,8 @@ export const PlatformConnector = () => {
                 <Button
                   variant={p.connected ? "default" : "outline"}
                   size="sm"
-                  onClick={() => toggleConnection(p.platform)}
+                  onClick={() => handlePlatformClick(p.platform)}
+                  disabled={p.platform === 'local'}
                   className={cn(
                     "min-w-[100px]",
                     p.connected && "bg-primary text-primary-foreground"
@@ -110,10 +147,10 @@ export const PlatformConnector = () => {
                   {p.connected ? (
                     <>
                       <Check className="w-4 h-4 mr-1" />
-                      Enabled
+                      {p.platform === 'spotify' ? 'Browse' : 'Enabled'}
                     </>
                   ) : (
-                    'Enable'
+                    'Connect'
                   )}
                 </Button>
               </div>
@@ -124,8 +161,8 @@ export const PlatformConnector = () => {
             <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Server className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>
-                To download from streaming platforms, connect to the local Python server. 
-                Music is downloaded in lossless WAV format and uploaded to your library.
+                Spotify requires OAuth login. SoundCloud and YouTube require the local Python server
+                for downloading (music is converted to lossless WAV format).
               </p>
             </div>
           </div>
