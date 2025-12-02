@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Code, Copy, Download, Play, RefreshCw } from 'lucide-react';
+import { Code, Copy, Download, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MashupElement, DeckState } from '@/types/dj';
 import { Button } from '@/components/ui/button';
@@ -12,109 +12,245 @@ interface SonicPiGeneratorProps {
   mashupElements: MashupElement[];
 }
 
+// Convert musical key to Sonic Pi format
+const keyToSonicPi = (key: string): string => {
+  return key
+    .toLowerCase()
+    .replace('#', 's')
+    .replace('m', '')
+    .trim();
+};
+
+// Get scale type based on key (minor if 'm' present)
+const getScaleType = (key: string): string => {
+  return key.toLowerCase().includes('m') ? ':minor' : ':major';
+};
+
 export const SonicPiGenerator = ({ deckA, deckB, mashupElements }: SonicPiGeneratorProps) => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateSonicPiCode = () => {
     setIsGenerating(true);
-    
-    // Simulate generation delay
-    setTimeout(() => {
-      setIsGenerating(false);
-    }, 500);
+    setTimeout(() => setIsGenerating(false), 500);
+
+    // Determine master BPM from deck settings
+    const masterBpm = deckA.track?.bpm || deckB.track?.bpm || 120;
+    const masterKey = deckA.track?.key || deckB.track?.key || 'Am';
+    const rootNote = keyToSonicPi(masterKey);
+    const scaleType = getScaleType(masterKey);
 
     const lines: string[] = [
-      '# 🎧 Auto-Generated Sonic Pi Mashup',
+      '# ═══════════════════════════════════════════════════════════',
+      '# 🎧 SONICMIX - Auto-Generated Mashup',
       `# Generated: ${new Date().toLocaleString()}`,
+      '# ═══════════════════════════════════════════════════════════',
       '#',
-      '# This code creates a mashup based on your deck settings',
-      '# Copy this into Sonic Pi and press Run!',
+      '# Copy this code into Sonic Pi and press Run!',
+      '# Modify values in real-time for live performance',
       '',
-      '# === CONFIGURATION ===',
-      'use_bpm 120',
+      '# === GLOBAL SETTINGS ===',
+      `use_bpm ${masterBpm}`,
+      '',
+      '# Master controls - tweak these live!',
+      `master_vol = ${((deckA.volume + deckB.volume) / 2).toFixed(2)}`,
+      `root = :${rootNote}2`,
+      `scale_type = ${scaleType}`,
       '',
     ];
 
-    // Add deck configurations
+    // Add deck A configuration
     if (deckA.track) {
-      lines.push(`# Deck A: ${deckA.track.title} by ${deckA.track.artist}`);
-      lines.push(`deck_a_bpm = ${deckA.track.bpm}`);
-      lines.push(`deck_a_key = :${deckA.track.key.toLowerCase().replace('#', 's')}`);
-      lines.push(`deck_a_volume = ${deckA.volume.toFixed(2)}`);
-      lines.push(`deck_a_speed = ${deckA.speed.toFixed(2)}`);
+      lines.push('# --- DECK A ---');
+      lines.push(`# Track: "${deckA.track.title}" by ${deckA.track.artist}`);
+      lines.push(`deck_a_vol = ${deckA.volume.toFixed(2)}`);
+      lines.push(`deck_a_rate = ${deckA.speed.toFixed(2)}`);
+      lines.push(`deck_a_pitch = ${deckA.pitch}`);
       lines.push('');
     }
 
+    // Add deck B configuration  
     if (deckB.track) {
-      lines.push(`# Deck B: ${deckB.track.title} by ${deckB.track.artist}`);
-      lines.push(`deck_b_bpm = ${deckB.track.bpm}`);
-      lines.push(`deck_b_key = :${deckB.track.key.toLowerCase().replace('#', 's')}`);
-      lines.push(`deck_b_volume = ${deckB.volume.toFixed(2)}`);
-      lines.push(`deck_b_speed = ${deckB.speed.toFixed(2)}`);
+      lines.push('# --- DECK B ---');
+      lines.push(`# Track: "${deckB.track.title}" by ${deckB.track.artist}`);
+      lines.push(`deck_b_vol = ${deckB.volume.toFixed(2)}`);
+      lines.push(`deck_b_rate = ${deckB.speed.toFixed(2)}`);
+      lines.push(`deck_b_pitch = ${deckB.pitch}`);
       lines.push('');
     }
 
-    // Add mashup elements
+    // Add mashup elements as comments
     if (mashupElements.length > 0) {
       lines.push('# === MASHUP ELEMENTS ===');
       mashupElements.forEach((element, index) => {
-        lines.push(`# Element ${index + 1}: ${element.trackTitle} (${element.type})`);
-        lines.push(`element_${index + 1}_volume = ${element.volume.toFixed(2)}`);
+        lines.push(`# ${index + 1}. ${element.trackTitle} (${element.type}) - vol: ${element.volume.toFixed(2)}`);
       });
       lines.push('');
     }
 
-    // Generate live loops
-    lines.push('# === LIVE LOOPS ===');
+    // Generate the main beat/drums loop
+    lines.push('# ═══════════════════════════════════════════════════════════');
+    lines.push('# LIVE LOOPS - These run concurrently and sync together');
+    lines.push('# ═══════════════════════════════════════════════════════════');
     lines.push('');
 
-    // Drums loop
-    lines.push('live_loop :drums do');
-    lines.push('  sample :bd_haus, amp: 0.8');
-    lines.push('  sleep 1');
-    lines.push('  sample :sn_dub, amp: 0.6');
+    // Kick drum pattern
+    lines.push('live_loop :kick do');
+    lines.push('  sample :bd_haus, amp: master_vol * 1.2, cutoff: 100');
     lines.push('  sleep 1');
     lines.push('end');
     lines.push('');
 
-    // Hi-hats
+    // Snare with variation
+    lines.push('live_loop :snare do');
+    lines.push('  sync :kick');
+    lines.push('  sleep 1');
+    lines.push('  sample :sn_dub, amp: master_vol * 0.8');
+    lines.push('  sleep 1');
+    lines.push('end');
+    lines.push('');
+
+    // Hi-hats with shuffle
     lines.push('live_loop :hats do');
-    lines.push('  sample :drum_cymbal_closed, amp: 0.3');
-    lines.push('  sleep 0.5');
+    lines.push('  sync :kick');
+    lines.push('  8.times do');
+    lines.push('    sample :drum_cymbal_closed, amp: master_vol * rrand(0.2, 0.4)');
+    lines.push('    sleep 0.5');
+    lines.push('  end');
     lines.push('end');
     lines.push('');
 
-    // Bass
+    // Bass line using TB-303 emulation
     lines.push('live_loop :bass do');
+    lines.push('  sync :kick');
     lines.push('  use_synth :tb303');
-    lines.push('  use_synth_defaults cutoff: 80, release: 0.2');
-    lines.push('  notes = (scale :e2, :minor_pentatonic).shuffle');
-    lines.push('  play notes.tick, amp: 0.5');
-    lines.push('  sleep 0.25');
+    lines.push('  use_synth_defaults cutoff: rrand(60, 100), release: 0.2, env_curve: 3');
+    lines.push('  notes = (scale root, scale_type, num_octaves: 1).shuffle');
+    lines.push('  16.times do');
+    lines.push(`    play notes.tick, amp: master_vol * ${deckA.track ? deckA.volume.toFixed(2) : '0.5'}`);
+    lines.push('    sleep 0.25');
+    lines.push('  end');
     lines.push('end');
     lines.push('');
 
-    // Melody based on deck settings
+    // Melodic element based on deck settings
     if (deckA.track || deckB.track) {
       lines.push('live_loop :melody do');
+      lines.push('  sync :kick');
       lines.push('  use_synth :prophet');
-      lines.push('  use_synth_defaults cutoff: 90, release: 0.5');
-      const key = deckA.track?.key || deckB.track?.key || 'Am';
-      lines.push(`  notes = (scale :${key.toLowerCase().replace('#', 's').replace('m', '')}3, :minor)`);
-      lines.push('  play notes.choose, amp: 0.4');
-      lines.push('  sleep [0.5, 1, 0.25].choose');
+      lines.push('  use_synth_defaults cutoff: 90, release: 0.5, amp: master_vol * 0.4');
+      lines.push('  notes = (scale root + 12, scale_type, num_octaves: 2)');
+      lines.push('  8.times do');
+      lines.push('    play notes.choose if one_in(2)');
+      lines.push('    sleep [0.5, 0.25, 0.25].choose');
+      lines.push('  end');
       lines.push('end');
       lines.push('');
     }
 
-    // Add effects
-    lines.push('# === EFFECTS ===');
-    lines.push('with_fx :reverb, room: 0.6 do');
-    lines.push('  with_fx :echo, phase: 0.375, decay: 4 do');
-    lines.push('    # Your live loops above will have these effects');
+    // Add pad/atmosphere
+    lines.push('live_loop :pad do');
+    lines.push('  sync :kick');
+    lines.push('  use_synth :hollow');
+    lines.push('  with_fx :reverb, room: 0.8, mix: 0.7 do');
+    lines.push('    play_chord (chord root + 12, :minor7), amp: master_vol * 0.3, attack: 2, release: 4');
     lines.push('  end');
+    lines.push('  sleep 8');
     lines.push('end');
+    lines.push('');
+
+    // Generate mashup-specific loops based on elements
+    const drumElements = mashupElements.filter(e => e.type === 'drums');
+    const vocalElements = mashupElements.filter(e => e.type === 'vocals');
+    const bassElements = mashupElements.filter(e => e.type === 'bass');
+    const melodyElements = mashupElements.filter(e => e.type === 'melody');
+
+    if (drumElements.length > 0) {
+      lines.push('# --- MASHUP: Additional Drums ---');
+      lines.push('live_loop :mashup_drums do');
+      lines.push('  sync :kick');
+      lines.push('  with_fx :slicer, phase: [0.125, 0.25].choose, wave: 0 do');
+      lines.push(`    sample :loop_amen, beat_stretch: 4, amp: ${drumElements[0].volume.toFixed(2)}`);
+      lines.push('  end');
+      lines.push('  sleep 4');
+      lines.push('end');
+      lines.push('');
+    }
+
+    if (vocalElements.length > 0) {
+      lines.push('# --- MASHUP: Vocal Chops ---');
+      lines.push('live_loop :mashup_vocals do');
+      lines.push('  sync :kick');
+      lines.push('  with_fx :echo, phase: 0.375, decay: 2, mix: 0.4 do');
+      lines.push(`    sample :ambi_choir, rate: [0.5, 1, -0.5].choose, amp: ${vocalElements[0].volume.toFixed(2)}`);
+      lines.push('  end');
+      lines.push('  sleep [4, 8].choose');
+      lines.push('end');
+      lines.push('');
+    }
+
+    if (bassElements.length > 0) {
+      lines.push('# --- MASHUP: Sub Bass Layer ---');
+      lines.push('live_loop :mashup_sub do');
+      lines.push('  sync :kick');
+      lines.push('  use_synth :dsaw');
+      lines.push('  use_synth_defaults cutoff: 50, release: 0.3');
+      lines.push(`    play root - 12, amp: ${bassElements[0].volume.toFixed(2)}`);
+      lines.push('  sleep 2');
+      lines.push('end');
+      lines.push('');
+    }
+
+    if (melodyElements.length > 0) {
+      lines.push('# --- MASHUP: Arp Layer ---');
+      lines.push('live_loop :mashup_arp do');
+      lines.push('  sync :kick');
+      lines.push('  use_synth :blade');
+      lines.push('  use_synth_defaults vibrato_rate: 6, vibrato_depth: 0.1');
+      lines.push('  notes = (scale root + 24, scale_type).shuffle.take(8)');
+      lines.push('  notes.each do |n|');
+      lines.push(`    play n, release: 0.1, amp: ${melodyElements[0].volume.toFixed(2)} * 0.5`);
+      lines.push('    sleep 0.125');
+      lines.push('  end');
+      lines.push('end');
+      lines.push('');
+    }
+
+    // Effects section based on deck effects
+    const hasEffects = deckA.effects.reverb > 0 || deckA.effects.delay > 0 || 
+                       deckB.effects.reverb > 0 || deckB.effects.delay > 0;
+
+    if (hasEffects) {
+      lines.push('# === GLOBAL EFFECTS ===');
+      lines.push('# Wrap any loop above with these for effect processing');
+      lines.push('#');
+      
+      const reverbAmt = Math.max(deckA.effects.reverb, deckB.effects.reverb);
+      const delayAmt = Math.max(deckA.effects.delay, deckB.effects.delay);
+      
+      if (reverbAmt > 0) {
+        lines.push(`# with_fx :reverb, room: ${(reverbAmt / 100).toFixed(2)}, mix: 0.5 do`);
+        lines.push('#   # your loop here');
+        lines.push('# end');
+      }
+      if (delayAmt > 0) {
+        lines.push(`# with_fx :echo, phase: 0.25, decay: ${(delayAmt / 50).toFixed(1)}, mix: 0.4 do`);
+        lines.push('#   # your loop here');
+        lines.push('# end');
+      }
+      lines.push('');
+    }
+
+    // Add performance tips
+    lines.push('# ═══════════════════════════════════════════════════════════');
+    lines.push('# PERFORMANCE TIPS');
+    lines.push('# ═══════════════════════════════════════════════════════════');
+    lines.push('# • Change master_vol to control overall volume (0.0 - 1.0)');
+    lines.push('# • Change root to shift key (e.g., :c2, :d2, :e2)');
+    lines.push('# • Change scale_type to :major, :minor, :minor_pentatonic');
+    lines.push('# • Comment out live_loops with # to mute them');
+    lines.push('# • Add "stop" inside a loop to stop just that loop');
+    lines.push('# • Press Run again to hot-swap changes live!');
 
     return lines.join('\n');
   };
@@ -134,12 +270,12 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements }: SonicPiGenera
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mashup_${Date.now()}.rb`;
+    a.download = `sonicmix_mashup_${Date.now()}.rb`;
     a.click();
     URL.revokeObjectURL(url);
     toast({
       title: "Downloaded!",
-      description: "Open the file in Sonic Pi to play your mashup",
+      description: "Open the .rb file in Sonic Pi to play your mashup",
     });
   };
 
