@@ -170,24 +170,36 @@ export const DownloaderSetupBanner = () => {
             {showInstructions && (
               <div className="mt-3 p-3 rounded-lg bg-background/50 border border-border space-y-3">
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">1. Download & run the installer (macOS)</p>
-                  <div className="flex gap-2">
+                  <p className="text-xs font-medium text-foreground">1. First, make the scripts executable (one-time)</p>
+                  <div className="flex gap-2 items-center">
                     <code className="flex-1 text-xs bg-muted px-2 py-1.5 rounded font-mono text-neon-cyan overflow-x-auto">
-                      Double-click SonicMix_Downloader.command
+                      chmod +x ~/Downloads/local_downloader/*.command
                     </code>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => copyCommand('chmod +x ~/Downloads/local_downloader/*.command')}
+                      className="shrink-0"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground">Open Terminal app and paste this command</p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground">2. Double-click install_macos.command</p>
+                  <p className="text-xs text-muted-foreground">This installs Python, FFmpeg, and ngrok automatically</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground">2. The URL will be copied to your clipboard automatically</p>
-                  <p className="text-xs text-muted-foreground">
-                    Just paste it above and click Connect!
-                  </p>
+                  <p className="text-xs font-medium text-foreground">3. Double-click SonicMix_Downloader.command</p>
+                  <p className="text-xs text-muted-foreground">The URL will be copied to your clipboard - paste it above!</p>
                 </div>
 
                 <div className="pt-2 border-t border-border">
                   <p className="text-xs text-muted-foreground">
-                    Or run manually: <code className="bg-muted px-1 rounded">python server.py</code> then <code className="bg-muted px-1 rounded">ngrok http 5000</code>
+                    <strong>Note:</strong> You'll need a free <a href="https://ngrok.com" target="_blank" rel="noopener" className="text-neon-cyan hover:underline">ngrok.com</a> account and run <code className="bg-muted px-1 rounded">ngrok config add-authtoken YOUR_TOKEN</code> once.
                   </p>
                 </div>
               </div>
