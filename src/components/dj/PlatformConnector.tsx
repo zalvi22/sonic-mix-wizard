@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ExternalLink, Check, Server, Music, Cloud, HardDrive, LogIn } from 'lucide-react';
+import { ExternalLink, Check, Server, Music, Cloud, HardDrive, LogIn, Copy, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Platform } from '@/types/dj';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { useSpotify } from '@/hooks/useSpotify';
 import { SpotifyBrowser } from './SpotifyBrowser';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface PlatformStatus {
   platform: Platform;
@@ -26,6 +28,17 @@ export const PlatformConnector = () => {
   const [youtubeConnected, setYoutubeConnected] = useState(false);
   const [spotifyBrowserOpen, setSpotifyBrowserOpen] = useState(false);
   const [downloadMode, setDownloadMode] = useState<'cloud' | 'local'>('cloud');
+  const { toast } = useToast();
+
+  const redirectUri = `${window.location.origin}/`;
+
+  const copyRedirectUri = () => {
+    navigator.clipboard.writeText(redirectUri);
+    toast({
+      title: 'Copied!',
+      description: 'Redirect URI copied to clipboard. Add this to your Spotify app settings.',
+    });
+  };
 
   const platforms: PlatformStatus[] = [
     {
@@ -104,19 +117,47 @@ export const PlatformConnector = () => {
           </SheetContent>
         </Sheet>
       ) : (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2 border-[#1DB954]/30 hover:bg-[#1DB954]/10 hover:border-[#1DB954]"
-          onClick={connectSpotify}
-          disabled={spotifyLoading}
-        >
-          <div className="w-4 h-4 rounded-full bg-[#1DB954] flex items-center justify-center">
-            <Music className="w-2.5 h-2.5 text-black" />
-          </div>
-          <span className="hidden sm:inline">Connect Spotify</span>
-          <LogIn className="w-3 h-3 sm:hidden" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 border-[#1DB954]/30 hover:bg-[#1DB954]/10 hover:border-[#1DB954]"
+            onClick={connectSpotify}
+            disabled={spotifyLoading}
+          >
+            <div className="w-4 h-4 rounded-full bg-[#1DB954] flex items-center justify-center">
+              <Music className="w-2.5 h-2.5 text-black" />
+            </div>
+            <span className="hidden sm:inline">Connect Spotify</span>
+            <LogIn className="w-3 h-3 sm:hidden" />
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Info className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="start">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Spotify Setup Required</p>
+                <p className="text-xs text-muted-foreground">
+                  Add this redirect URI to your Spotify Developer Dashboard:
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-muted p-2 rounded break-all">
+                    {redirectUri}
+                  </code>
+                  <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={copyRedirectUri}>
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-primary underline">developer.spotify.com</a> → Your App → Settings → Redirect URIs
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       )}
 
       {/* Local Downloader Settings */}
