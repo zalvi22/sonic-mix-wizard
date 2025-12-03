@@ -72,25 +72,26 @@ jobs:
         run: |
           mkdir -p desktop/src-tauri/icons
           
-          cat > /tmp/create_icon.py << 'EOF'
+        cat > /tmp/create_icon.py << 'EOF'
           import struct
           import zlib
 
-          def create_png(size, color_rgb):
+          def create_png(size, color_rgba):
               def png_chunk(chunk_type, data):
                   chunk_len = struct.pack('>I', len(data))
                   chunk_crc = struct.pack('>I', zlib.crc32(chunk_type + data) & 0xffffffff)
                   return chunk_len + chunk_type + data + chunk_crc
               
               signature = b'\x89PNG\r\n\x1a\n'
-              ihdr_data = struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0)
+              # Color type 6 = RGBA
+              ihdr_data = struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0)
               ihdr = png_chunk(b'IHDR', ihdr_data)
               
               raw_data = b''
               for y in range(size):
                   raw_data += b'\x00'
                   for x in range(size):
-                      raw_data += bytes(color_rgb)
+                      raw_data += bytes(color_rgba)
               
               compressed = zlib.compress(raw_data, 9)
               idat = png_chunk(b'IDAT', compressed)
@@ -98,7 +99,8 @@ jobs:
               
               return signature + ihdr + idat + iend
 
-          color = (138, 43, 226)
+          # RGBA color (purple with full opacity)
+          color = (138, 43, 226, 255)
           for s in [32, 128, 256, 512]:
               with open(f'/tmp/icon_{s}.png', 'wb') as f:
                   f.write(create_png(s, color))
