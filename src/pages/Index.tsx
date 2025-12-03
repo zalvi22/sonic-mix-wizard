@@ -9,6 +9,8 @@ import { SonicPiGenerator } from '@/components/dj/SonicPiGenerator';
 import { AIPromptInput } from '@/components/dj/AIPromptInput';
 import { DownloaderSetupBanner } from '@/components/dj/DownloaderSetupBanner';
 import { TrackQueue } from '@/components/dj/TrackQueue';
+import { DownloadProgress } from '@/components/dj/DownloadProgress';
+import { useTrackDownloaderContext } from '@/contexts/TrackDownloaderContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const DEFAULT_DECK_STATE: DeckState = {
@@ -40,6 +42,8 @@ const Index = () => {
   const [mashupElements, setMashupElements] = useState<MashupElement[]>([]);
   const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
   const [trackQueue, setTrackQueue] = useState<Track[]>([]);
+  
+  const { downloadItems, dismissDownload, clearCompletedDownloads } = useTrackDownloaderContext();
 
   const updateDeckA = useCallback((updates: Partial<DeckState>) => {
     setDeckA(prev => ({ ...prev, ...updates }));
@@ -213,6 +217,13 @@ const Index = () => {
       <footer className="px-6 py-3 border-t border-border text-center text-xs text-muted-foreground">
         <p>SonicMix • Powered by Sonic Pi • Connect platforms to unlock full functionality</p>
       </footer>
+      
+      {/* Download Progress Panel */}
+      <DownloadProgress 
+        downloads={downloadItems}
+        onDismiss={dismissDownload}
+        onClearCompleted={clearCompletedDownloads}
+      />
     </div>
   );
 };

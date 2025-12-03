@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSpotify } from '@/hooks/useSpotify';
-import { useTrackDownloader } from '@/hooks/useTrackDownloader';
+import { useTrackDownloaderContext } from '@/contexts/TrackDownloaderContext';
 import { Track } from '@/types/dj';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +63,7 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup, onAddToQueue }: S
     getFeaturedPlaylists,
   } = useSpotify();
 
-  const { downloadProgress, downloadAndAddTrack, isDownloading } = useTrackDownloader();
+  const { downloadProgress, downloadAndAddTrack, isDownloading } = useTrackDownloaderContext();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
