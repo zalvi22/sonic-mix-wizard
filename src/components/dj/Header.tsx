@@ -1,4 +1,4 @@
-import { Disc3, Settings, HelpCircle, Zap, Github } from 'lucide-react';
+import { Disc3, Settings, HelpCircle, Github, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PlatformConnector } from './PlatformConnector';
@@ -55,6 +55,16 @@ export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderPro
 
         {/* Quick Actions */}
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="gap-2 border-primary/50 text-primary hover:bg-primary/10"
+            onClick={() => navigate('/desktop')}
+            title="Download Desktop App"
+          >
+            <Monitor className="w-4 h-4" />
+            Desktop
+          </Button>
           <Button 
             variant="ghost" 
             size="icon" 
