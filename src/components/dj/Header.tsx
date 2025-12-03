@@ -1,6 +1,7 @@
 import { Disc3, Settings, HelpCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlatformConnector } from './PlatformConnector';
+import { TunePatSyncIndicator } from './TunePatSyncIndicator';
 import { Track } from '@/types/dj';
 
 interface HeaderProps {
@@ -39,7 +40,10 @@ export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderPro
       </div>
 
       {/* Status & Actions */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        {/* TunePat Sync Status */}
+        <TunePatSyncIndicator />
+        
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border">
           <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
           <span className="text-xs text-muted-foreground">Ready</span>
