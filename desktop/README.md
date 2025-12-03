@@ -9,7 +9,29 @@ Native Mac application for SonicMix with integrated Sonic Pi bridge, TunePat wat
 - **Audio Downloader**: Download tracks using yt-dlp (lossless support)
 - **System Tray**: Quick access to all services
 
-## Prerequisites
+## Quick Start (Recommended)
+
+**Option 1: Double-click setup**
+1. Connect GitHub in Lovable and clone the repo locally
+2. Double-click `desktop/setup.command` in Finder
+3. Follow the prompts
+
+**Option 2: Terminal setup**
+```bash
+cd desktop
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+- Check/install prerequisites (Rust, Xcode CLI)
+- Copy the React frontend from the main project
+- Install all dependencies
+- Prepare Tauri for building
+
+## Manual Prerequisites
+
+If you prefer manual setup:
 
 ### Required
 1. **Rust** - Install via [rustup](https://rustup.rs/):
@@ -34,29 +56,26 @@ Native Mac application for SonicMix with integrated Sonic Pi bridge, TunePat wat
 
 6. **TunePat** - For streaming service downloads
 
-## Installation
+## Running the App
 
-1. **Clone and enter directory**:
-   ```bash
-   cd desktop
-   ```
+**Development mode** (hot-reload):
+```bash
+npm run tauri dev
+```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+**Production build**:
+```bash
+npm run tauri build
+```
 
-3. **Run in development mode**:
-   ```bash
-   npm run tauri dev
-   ```
+The `.dmg` installer will be in `src-tauri/target/release/bundle/dmg/`
 
-4. **Build for production**:
-   ```bash
-   npm run tauri build
-   ```
-   
-   The `.dmg` installer will be in `src-tauri/target/release/bundle/dmg/`
+## Syncing Changes
+
+After making changes to the main web project, sync to desktop:
+```bash
+./sync.sh
+```
 
 ## Usage
 
