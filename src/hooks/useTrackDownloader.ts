@@ -151,7 +151,7 @@ export function useTrackDownloader() {
 
       updateDownloadItem(trackId, { progress: 30 });
 
-      // Download via edge function
+      // Try downloading via edge function (works for YouTube, SoundCloud, etc.)
       const { data, error } = await supabase.functions.invoke('download-audio', {
         body: {
           url: spotifyTrack.external_urls.spotify,
@@ -162,28 +162,42 @@ export function useTrackDownloader() {
 
       clearInterval(progressInterval);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      updateDownloadItem(trackId, { 
-        progress: 100, 
-        destination: data.track?.audio_file_path ? `audio-files/${data.track.audio_file_path}` : 'Cloud Storage'
-      });
-
-      // Generate waveform from the downloaded audio
-      setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
-      updateDownloadItem(trackId, { status: 'analyzing' });
+      // Check if we got actual audio back
+      let audioUrl = data?.audioUrl;
       let waveformData: WaveformData | null = null;
-      
-      if (data.audioUrl) {
-        waveformData = await generateWaveform(data.audioUrl);
+
+      // If no audio from download, use Spotify preview URL as fallback
+      if (!audioUrl && spotifyTrack.preview_url) {
+        console.log('Using Spotify preview URL as fallback');
+        audioUrl = spotifyTrack.preview_url;
+        updateDownloadItem(trackId, { 
+          progress: 100, 
+          destination: 'Spotify Preview (30s)'
+        });
+      } else if (audioUrl) {
+        updateDownloadItem(trackId, { 
+          progress: 100, 
+          destination: data.track?.audio_file_path ? `audio-files/${data.track.audio_file_path}` : 'Cloud Storage'
+        });
+      }
+
+      // Generate waveform if we have audio
+      if (audioUrl) {
+        setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
+        updateDownloadItem(trackId, { status: 'analyzing' });
         
-        // Store waveform in database
-        if (waveformData && data.track?.id) {
-          await supabase
-            .from('tracks')
-            .update({ waveform: JSON.parse(JSON.stringify(waveformData)) })
-            .eq('id', data.track.id);
+        try {
+          waveformData = await generateWaveform(audioUrl);
+          
+          // Store waveform in database if we have a track ID
+          if (waveformData && data?.track?.id) {
+            await supabase
+              .from('tracks')
+              .update({ waveform: JSON.parse(JSON.stringify(waveformData)) })
+              .eq('id', data.track.id);
+          }
+        } catch (waveformErr) {
+          console.error('Waveform generation failed:', waveformErr);
         }
       }
 
@@ -191,33 +205,71 @@ export function useTrackDownloader() {
       updateDownloadItem(trackId, { status: 'complete' });
 
       const track: Track = {
-        id: data.track?.id || `spotify-${trackId}`,
+        id: data?.track?.id || `spotify-${trackId}`,
         title: spotifyTrack.name,
         artist: spotifyTrack.artists.map(a => a.name).join(', '),
         duration: Math.floor(spotifyTrack.duration_ms / 1000),
-        bpm: data.track?.bpm || 120,
-        key: data.track?.key || 'Am',
+        bpm: data?.track?.bpm || 120,
+        key: data?.track?.key || 'Am',
         platform: 'spotify' as Platform,
         coverUrl: spotifyTrack.album.images[0]?.url,
-        audioUrl: data.audioUrl,
+        audioUrl: audioUrl || undefined,
         waveform: waveformData || undefined,
       };
 
       return {
-        success: true,
+        success: !!audioUrl,
         track,
-        audioUrl: data.audioUrl,
+        audioUrl: audioUrl || undefined,
       };
     } catch (err) {
       clearInterval(progressInterval);
       console.error('Download error:', err);
+      
+      // Fallback to Spotify preview URL even on error
+      let audioUrl = spotifyTrack.preview_url || undefined;
+      let waveformData: WaveformData | null = null;
+      
+      if (audioUrl) {
+        console.log('Error occurred, falling back to Spotify preview URL');
+        try {
+          setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
+          updateDownloadItem(trackId, { status: 'analyzing', progress: 100, destination: 'Spotify Preview (30s)' });
+          waveformData = await generateWaveform(audioUrl);
+        } catch (waveformErr) {
+          console.error('Waveform generation failed:', waveformErr);
+        }
+        
+        setDownloadProgress(prev => ({ ...prev, [trackId]: 'complete' }));
+        updateDownloadItem(trackId, { status: 'complete' });
+        
+        const track: Track = {
+          id: `spotify-${trackId}`,
+          title: spotifyTrack.name,
+          artist: spotifyTrack.artists.map(a => a.name).join(', '),
+          duration: Math.floor(spotifyTrack.duration_ms / 1000),
+          bpm: 120,
+          key: 'Am',
+          platform: 'spotify' as Platform,
+          coverUrl: spotifyTrack.album.images[0]?.url,
+          audioUrl,
+          waveform: waveformData || undefined,
+        };
+
+        return {
+          success: true,
+          track,
+          audioUrl,
+        };
+      }
+      
       setDownloadProgress(prev => ({ ...prev, [trackId]: 'error' }));
       updateDownloadItem(trackId, { 
         status: 'error', 
-        error: err instanceof Error ? err.message : 'Download failed' 
+        error: 'No audio available - track has no preview' 
       });
       
-      // Even if download fails, create a track entry for reference
+      // Create a track entry without audio
       const track: Track = {
         id: `spotify-${trackId}`,
         title: spotifyTrack.name,
@@ -232,7 +284,7 @@ export function useTrackDownloader() {
       return {
         success: false,
         track,
-        error: err instanceof Error ? err.message : 'Download failed',
+        error: 'No audio available for this track',
       };
     }
   };
