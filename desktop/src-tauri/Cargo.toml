@@ -1,0 +1,32 @@
+[package]
+name = "sonicmix"
+version = "1.0.0"
+description = "SonicMix - AI-Powered DJ Mashup Generator"
+authors = ["SonicMix"]
+license = "MIT"
+repository = ""
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "devtools"] }
+tauri-plugin-shell = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+rosc = "0.10"  # OSC protocol for Sonic Pi
+notify = "6"   # File system watching for TunePat
+reqwest = { version = "0.11", features = ["json"] }
+directories = "5"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
