@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Download, Music, FolderSync, Zap, Apple, Shield, RefreshCw, Cpu, HardDrive, MemoryStick, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Monitor, Download, Music, FolderSync, Zap, Apple, Cpu, HardDrive, MemoryStick, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -74,48 +74,30 @@ export default function Desktop() {
             <Apple className="h-10 w-10 text-foreground" />
             <div className="text-left">
               <h3 className="text-2xl font-display text-foreground">Download for Mac</h3>
-              <p className="text-sm text-muted-foreground">macOS 10.15 or later</p>
+              <p className="text-sm text-muted-foreground">One-click install</p>
             </div>
           </div>
 
           <Button 
             size="lg"
-            className="w-full gap-3 text-lg py-7 mb-4"
+            className="w-full gap-3 text-lg py-7 mb-6"
             onClick={() => window.open(releasesUrl, '_blank')}
           >
             <Download className="h-6 w-6" />
-            Download Latest Release
+            Download SonicMix.dmg
           </Button>
 
-          {/* Check for Updates */}
-          <Button 
-            variant="outline"
-            className="w-full gap-2 mb-4"
-            onClick={() => window.open(releasesUrl, '_blank')}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Check for Updates
-            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
-          </Button>
-
-          {/* Installation steps */}
-          <div className="bg-background/50 rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground mb-3">Installation:</p>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">1</span>
-              <span>Download the .dmg file from releases</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">2</span>
-              <span>Open and drag SonicMix to Applications</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">3</span>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                <span>Allow in System Settings → Privacy (first launch)</span>
-              </div>
-            </div>
+          {/* Simple install info */}
+          <div className="bg-background/50 rounded-lg p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              <span className="text-foreground font-medium">Standard macOS install:</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Open the .dmg → Drag to Applications → Done
+            </p>
+            <p className="text-xs text-muted-foreground mt-2 opacity-70">
+              macOS will prompt for permission on first launch
+            </p>
           </div>
         </Card>
 
@@ -140,13 +122,13 @@ export default function Desktop() {
           </div>
           <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-xs text-muted-foreground">
-              <span className="text-primary font-medium">Recommended:</span> Apple Silicon Mac with 16GB RAM for real-time audio processing and stem separation.
+              <span className="text-primary font-medium">Recommended:</span> Apple Silicon Mac with 16GB RAM for real-time audio processing.
             </p>
           </div>
         </Card>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           {features.map((feature) => (
             <Card key={feature.title} className="deck-panel p-4">
               <div className="flex items-center gap-3">
@@ -160,6 +142,18 @@ export default function Desktop() {
               </div>
             </Card>
           ))}
+        </div>
+
+        {/* View all releases link */}
+        <div className="text-center">
+          <Button 
+            variant="link"
+            className="gap-2 text-muted-foreground hover:text-foreground"
+            onClick={() => window.open(releasesUrl, '_blank')}
+          >
+            View all releases & changelog
+            <ExternalLink className="h-3 w-3" />
+          </Button>
         </div>
       </main>
     </div>
