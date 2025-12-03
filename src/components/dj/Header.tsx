@@ -1,8 +1,10 @@
-import { Disc3, Settings, HelpCircle, Zap } from 'lucide-react';
+import { Disc3, Settings, HelpCircle, Zap, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlatformConnector } from './PlatformConnector';
 import { TunePatSyncIndicator } from './TunePatSyncIndicator';
+import { DesktopStatusBar } from './DesktopStatusBar';
 import { Track } from '@/types/dj';
+import { detectPlatform } from '@/lib/platform';
 
 interface HeaderProps {
   onTrackSelect?: (track: Track) => void;
@@ -11,6 +13,8 @@ interface HeaderProps {
 }
 
 export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderProps) => {
+  const platform = detectPlatform();
+  
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
       {/* Logo */}
@@ -44,15 +48,19 @@ export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderPro
         {/* TunePat Sync Status */}
         <TunePatSyncIndicator />
         
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border">
-          <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-          <span className="text-xs text-muted-foreground">Ready</span>
-        </div>
+        {/* Desktop/Web Status */}
+        <DesktopStatusBar />
 
         {/* Quick Actions */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <Zap className="w-4 h-4" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9"
+            onClick={() => window.open('https://github.com/sonic-pi-net/sonic-pi', '_blank')}
+            title="Sonic Pi Documentation"
+          >
+            <Github className="w-4 h-4" />
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9">
             <HelpCircle className="w-4 h-4" />

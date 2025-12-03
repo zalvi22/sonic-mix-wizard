@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Code, Copy, Download, RefreshCw, Sparkles, Settings } from 'lucide-react';
+import { Code, Copy, Download, RefreshCw, Sparkles, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MashupElement, DeckState } from '@/types/dj';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { SonicPiControls } from './SonicPiControls';
 
 interface SonicPiGeneratorProps {
   deckA: DeckState;
@@ -264,14 +265,6 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode
   // Use AI-generated code if available and enabled, otherwise use default generator
   const code = (useAICode && aiGeneratedCode) ? aiGeneratedCode : generateSonicPiCode;
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(code);
-    toast({
-      title: "Copied to clipboard!",
-      description: "Paste this code into Sonic Pi and hit Run",
-    });
-  };
-
   const downloadCode = () => {
     const blob = new Blob([code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -323,15 +316,6 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={copyToClipboard}
-            title="Copy to clipboard"
-          >
-            <Copy className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
             onClick={downloadCode}
             title="Download"
           >
@@ -347,16 +331,19 @@ export const SonicPiGenerator = ({ deckA, deckB, mashupElements, aiGeneratedCode
         </pre>
       </ScrollArea>
 
-      {/* Instructions */}
-      <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
-        <div className="text-xs text-muted-foreground">
-          <strong className="text-foreground">How to use:</strong>
-          <ol className="mt-2 space-y-1 list-decimal list-inside">
-            <li>Copy the code above</li>
-            <li>Open Sonic Pi on your computer</li>
-            <li>Paste the code into a buffer</li>
-            <li>Press Run to play your mashup!</li>
-          </ol>
+      {/* Sonic Pi Controls */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <div className="flex items-center justify-between">
+          <SonicPiControls code={code} />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground"
+            onClick={() => window.open('https://sonic-pi.net', '_blank')}
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            Get Sonic Pi
+          </Button>
         </div>
       </div>
     </div>

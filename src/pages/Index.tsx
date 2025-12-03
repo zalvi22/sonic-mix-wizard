@@ -158,6 +158,8 @@ const Index = () => {
                 onUpdateMixer={updateMixer}
                 deckAVolume={deckA.volume}
                 deckBVolume={deckB.volume}
+                deckAPlaying={deckA.isPlaying}
+                deckBPlaying={deckB.isPlaying}
               />
               <Deck 
                 deckId="B"
