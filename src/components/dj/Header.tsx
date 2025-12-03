@@ -1,8 +1,14 @@
 import { Disc3, Settings, HelpCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlatformConnector } from './PlatformConnector';
+import { Track } from '@/types/dj';
 
-export const Header = () => {
+interface HeaderProps {
+  onTrackSelect?: (track: Track) => void;
+  onAddToMashup?: (track: Track) => void;
+}
+
+export const Header = ({ onTrackSelect, onAddToMashup }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
       {/* Logo */}
@@ -24,7 +30,10 @@ export const Header = () => {
 
       {/* Center - Platform Connections */}
       <div className="flex items-center gap-4">
-        <PlatformConnector />
+        <PlatformConnector 
+          onTrackSelect={onTrackSelect}
+          onAddToMashup={onAddToMashup}
+        />
       </div>
 
       {/* Status & Actions */}
