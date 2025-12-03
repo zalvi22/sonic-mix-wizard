@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Track, Platform } from '@/types/dj';
 import { generateWaveformFromUrl, WaveformData } from '@/lib/waveformGenerator';
+import { DownloadItem } from '@/components/dj/DownloadProgress';
 
 interface SpotifyTrack {
   id: string;
@@ -24,7 +25,40 @@ interface DownloadResult {
 export function useTrackDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<Record<string, 'pending' | 'downloading' | 'complete' | 'error' | 'analyzing'>>({});
+  const [downloadItems, setDownloadItems] = useState<DownloadItem[]>([]);
   const { toast } = useToast();
+
+  // Update download item
+  const updateDownloadItem = useCallback((id: string, updates: Partial<DownloadItem>) => {
+    setDownloadItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  }, []);
+
+  // Add new download item
+  const addDownloadItem = useCallback((track: SpotifyTrack): DownloadItem => {
+    const item: DownloadItem = {
+      id: track.id,
+      title: track.name,
+      artist: track.artists.map(a => a.name).join(', '),
+      status: 'pending',
+      progress: 0,
+      destination: 'Cloud Storage / audio-files',
+      startedAt: Date.now(),
+    };
+    setDownloadItems(prev => [item, ...prev]);
+    return item;
+  }, []);
+
+  // Dismiss download item
+  const dismissDownload = useCallback((id: string) => {
+    setDownloadItems(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  // Clear completed downloads
+  const clearCompletedDownloads = useCallback(() => {
+    setDownloadItems(prev => prev.filter(item => item.status !== 'complete'));
+  }, []);
 
   // Generate waveform from audio URL
   const generateWaveform = async (audioUrl: string): Promise<WaveformData | null> => {
@@ -41,7 +75,22 @@ export function useTrackDownloader() {
 
   const downloadSpotifyTrack = async (spotifyTrack: SpotifyTrack): Promise<DownloadResult> => {
     const trackId = spotifyTrack.id;
+    
+    // Add to download items
+    addDownloadItem(spotifyTrack);
+    
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setDownloadItems(prev => prev.map(item => {
+        if (item.id === trackId && item.status === 'downloading' && item.progress < 90) {
+          return { ...item, progress: Math.min(item.progress + Math.random() * 15, 90) };
+        }
+        return item;
+      }));
+    }, 500);
+
     setDownloadProgress(prev => ({ ...prev, [trackId]: 'downloading' }));
+    updateDownloadItem(trackId, { status: 'downloading', progress: 10 });
     
     try {
       // Check if track already exists in our database
@@ -52,12 +101,16 @@ export function useTrackDownloader() {
         .single();
 
       if (existingTrack && existingTrack.audio_file_path) {
+        clearInterval(progressInterval);
+        updateDownloadItem(trackId, { status: 'downloading', progress: 100, destination: `audio-files/${existingTrack.audio_file_path}` });
+        
         // Track already downloaded
         const { data: urlData } = supabase.storage
           .from('audio-files')
           .getPublicUrl(existingTrack.audio_file_path);
 
         setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
+        updateDownloadItem(trackId, { status: 'analyzing' });
         
         // Generate waveform if not already stored
         let waveformData: WaveformData | null = existingTrack.waveform 
@@ -76,6 +129,7 @@ export function useTrackDownloader() {
         }
 
         setDownloadProgress(prev => ({ ...prev, [trackId]: 'complete' }));
+        updateDownloadItem(trackId, { status: 'complete' });
         
         return {
           success: true,
@@ -95,6 +149,8 @@ export function useTrackDownloader() {
         };
       }
 
+      updateDownloadItem(trackId, { progress: 30 });
+
       // Download via edge function
       const { data, error } = await supabase.functions.invoke('download-audio', {
         body: {
@@ -104,11 +160,19 @@ export function useTrackDownloader() {
         },
       });
 
+      clearInterval(progressInterval);
+
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      updateDownloadItem(trackId, { 
+        progress: 100, 
+        destination: data.track?.audio_file_path ? `audio-files/${data.track.audio_file_path}` : 'Cloud Storage'
+      });
+
       // Generate waveform from the downloaded audio
       setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
+      updateDownloadItem(trackId, { status: 'analyzing' });
       let waveformData: WaveformData | null = null;
       
       if (data.audioUrl) {
@@ -124,6 +188,7 @@ export function useTrackDownloader() {
       }
 
       setDownloadProgress(prev => ({ ...prev, [trackId]: 'complete' }));
+      updateDownloadItem(trackId, { status: 'complete' });
 
       const track: Track = {
         id: data.track?.id || `spotify-${trackId}`,
@@ -144,8 +209,13 @@ export function useTrackDownloader() {
         audioUrl: data.audioUrl,
       };
     } catch (err) {
+      clearInterval(progressInterval);
       console.error('Download error:', err);
       setDownloadProgress(prev => ({ ...prev, [trackId]: 'error' }));
+      updateDownloadItem(trackId, { 
+        status: 'error', 
+        error: err instanceof Error ? err.message : 'Download failed' 
+      });
       
       // Even if download fails, create a track entry for reference
       const track: Track = {
@@ -207,7 +277,10 @@ export function useTrackDownloader() {
   return {
     isDownloading,
     downloadProgress,
+    downloadItems,
     downloadSpotifyTrack,
     downloadAndAddTrack,
+    dismissDownload,
+    clearCompletedDownloads,
   };
 }
