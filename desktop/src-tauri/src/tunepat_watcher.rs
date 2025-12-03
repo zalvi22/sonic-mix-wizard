@@ -1,7 +1,6 @@
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher, Event, EventKind};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc;
 use serde::Serialize;
@@ -22,8 +21,15 @@ pub fn get_default_tunepat_path() -> Result<Option<String>, String> {
         .ok_or("Could not find home directory")?;
     
     let music_dir = home.audio_dir()
-        .or_else(|| home.home_dir().join("Music").exists().then(|| home.home_dir().join("Music").as_path()))
-        .map(|p| p.to_path_buf());
+        .map(|p| p.to_path_buf())
+        .or_else(|| {
+            let music_path = home.home_dir().join("Music");
+            if music_path.exists() {
+                Some(music_path)
+            } else {
+                None
+            }
+        });
     
     if let Some(music) = music_dir {
         // Check common TunePat locations
