@@ -114,7 +114,7 @@ export const PlatformConnector = ({ onTrackSelect, onAddToMashup }: PlatformConn
               </Badge>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[90vw] max-w-[600px] p-0 flex flex-col">
+          <SheetContent side="right" className="w-[95vw] max-w-[480px] sm:max-w-[550px] p-0 flex flex-col">
             <SheetHeader className="sr-only">
               <SheetTitle>Spotify Browser</SheetTitle>
             </SheetHeader>
