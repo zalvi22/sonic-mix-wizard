@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 const GITHUB_REPO = 'https://github.com/zalvi22/sonic-mix-wizard';
+const DMG_DOWNLOAD_URL = `${GITHUB_REPO}/releases/latest/download/SonicMix_x64.dmg`;
+const RELEASES_URL = `${GITHUB_REPO}/releases`;
 
 export default function Desktop() {
   const navigate = useNavigate();
-
-  const releasesUrl = `${GITHUB_REPO}/releases`;
 
   const features = [
     {
@@ -81,10 +81,12 @@ export default function Desktop() {
           <Button 
             size="lg"
             className="w-full gap-3 text-lg py-7 mb-6"
-            onClick={() => window.open(releasesUrl, '_blank')}
+            asChild
           >
-            <Download className="h-6 w-6" />
-            Download SonicMix.dmg
+            <a href={DMG_DOWNLOAD_URL} download>
+              <Download className="h-6 w-6" />
+              Download SonicMix.dmg
+            </a>
           </Button>
 
           {/* Simple install info */}
@@ -149,10 +151,12 @@ export default function Desktop() {
           <Button 
             variant="link"
             className="gap-2 text-muted-foreground hover:text-foreground"
-            onClick={() => window.open(releasesUrl, '_blank')}
+            asChild
           >
-            View all releases & changelog
-            <ExternalLink className="h-3 w-3" />
+            <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">
+              View all releases & changelog
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </Button>
         </div>
       </main>

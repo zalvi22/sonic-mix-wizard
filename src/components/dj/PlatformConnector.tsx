@@ -36,7 +36,16 @@ export const PlatformConnector = ({ onTrackSelect, onAddToMashup, onAddToQueue }
   const [downloadMode, setDownloadMode] = useState<'cloud' | 'local'>('cloud');
   const { toast } = useToast();
 
-  const redirectUri = `${window.location.origin}/`;
+  // Spotify requires 127.0.0.1 instead of localhost for local development
+  const getSpotifyRedirectUri = () => {
+    const origin = window.location.origin;
+    // Replace localhost with 127.0.0.1 for Spotify compliance
+    if (origin.includes('localhost')) {
+      return origin.replace('localhost', '127.0.0.1') + '/';
+    }
+    return origin + '/';
+  };
+  const redirectUri = getSpotifyRedirectUri();
 
   const copyRedirectUri = () => {
     navigator.clipboard.writeText(redirectUri);

@@ -27,7 +27,12 @@ export function useSpotify() {
   const { toast } = useToast();
 
   const getRedirectUri = () => {
-    return `${window.location.origin}/`;
+    const origin = window.location.origin;
+    // Spotify requires 127.0.0.1 instead of localhost (as of April 2025)
+    if (origin.includes('localhost')) {
+      return origin.replace('localhost', '127.0.0.1') + '/';
+    }
+    return origin + '/';
   };
 
   const saveTokens = (tokens: SpotifyTokens) => {
