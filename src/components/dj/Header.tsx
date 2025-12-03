@@ -1,4 +1,5 @@
 import { Disc3, Settings, HelpCircle, Zap, Github } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PlatformConnector } from './PlatformConnector';
 import { TunePatSyncIndicator } from './TunePatSyncIndicator';
@@ -13,6 +14,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderProps) => {
+  const navigate = useNavigate();
   const platform = detectPlatform();
   
   return (
@@ -65,7 +67,13 @@ export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderPro
           <Button variant="ghost" size="icon" className="h-9 w-9">
             <HelpCircle className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9"
+            onClick={() => navigate('/settings')}
+            title="Settings"
+          >
             <Settings className="w-4 h-4" />
           </Button>
         </div>
