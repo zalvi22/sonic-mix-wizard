@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Volume2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Play, Pause, SkipBack, Repeat, Volume2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeckState, Track } from '@/types/dj';
 import { RekordboxWaveform } from './RekordboxWaveform';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { WaveformData } from '@/lib/waveformGenerator';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 
 interface DeckProps {
   deckId: 'A' | 'B';
@@ -15,17 +16,127 @@ interface DeckProps {
 }
 
 export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
-  const color = deckId === 'A' ? 'cyan' : 'magenta';
   const colorClass = deckId === 'A' ? 'neon-text-cyan' : 'neon-text-magenta';
   const borderClass = deckId === 'A' ? 'neon-border-cyan' : 'neon-border-magenta';
   
-  // Use ref to track position without causing re-renders
+  const audioPlayer = useAudioPlayer();
+  const [isLoading, setIsLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const lastTrackIdRef = useRef<string | null>(null);
+  const isSyncingRef = useRef(false);
+
+  // Load audio when track changes
+  useEffect(() => {
+    const track = deck.track;
+    if (!track) {
+      lastTrackIdRef.current = null;
+      return;
+    }
+
+    if (track.id === lastTrackIdRef.current) return;
+    lastTrackIdRef.current = track.id;
+
+    const loadAudio = async () => {
+      if (!track.audioUrl) {
+        console.log('No audio URL for track:', track.title);
+        setAudioError('No audio available');
+        return;
+      }
+
+      setIsLoading(true);
+      setAudioError(null);
+      
+      try {
+        await audioPlayer.load(track.audioUrl);
+        console.log('Audio loaded for:', track.title);
+      } catch (err) {
+        console.error('Failed to load audio:', err);
+        setAudioError('Failed to load audio');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAudio();
+  }, [deck.track?.id, deck.track?.audioUrl]);
+
+  // Sync audio player state with deck state
+  useEffect(() => {
+    if (isSyncingRef.current) return;
+    
+    if (deck.isPlaying && audioPlayer.state.isLoaded && !audioPlayer.state.isPlaying) {
+      audioPlayer.play();
+    } else if (!deck.isPlaying && audioPlayer.state.isPlaying) {
+      audioPlayer.pause();
+    }
+  }, [deck.isPlaying, audioPlayer.state.isLoaded]);
+
+  // Update position from audio player
+  useEffect(() => {
+    if (audioPlayer.state.isPlaying) {
+      isSyncingRef.current = true;
+      onUpdateDeck({ position: audioPlayer.state.currentTime });
+      isSyncingRef.current = false;
+    }
+  }, [audioPlayer.state.currentTime]);
+
+  // Sync volume changes
+  useEffect(() => {
+    audioPlayer.setVolume(deck.volume);
+  }, [deck.volume]);
+
+  // Sync speed changes
+  useEffect(() => {
+    audioPlayer.setPlaybackRate(deck.speed);
+  }, [deck.speed]);
+
+  // Handle play/pause from audio player ending
+  useEffect(() => {
+    if (!audioPlayer.state.isPlaying && deck.isPlaying && audioPlayer.state.isLoaded) {
+      // Audio finished or was stopped
+      if (audioPlayer.state.currentTime >= audioPlayer.state.duration - 0.1) {
+        onUpdateDeck({ isPlaying: false, position: 0 });
+      }
+    }
+  }, [audioPlayer.state.isPlaying, audioPlayer.state.currentTime]);
+
+  const handlePlayPause = () => {
+    if (!audioPlayer.state.isLoaded && !deck.track?.audioUrl) {
+      // No audio - just toggle visual state for tracks without audio
+      onUpdateDeck({ isPlaying: !deck.isPlaying });
+      return;
+    }
+    
+    if (deck.isPlaying) {
+      audioPlayer.pause();
+      onUpdateDeck({ isPlaying: false });
+    } else {
+      audioPlayer.play();
+      onUpdateDeck({ isPlaying: true });
+    }
+  };
+
+  const handleSeek = (position: number) => {
+    if (audioPlayer.state.isLoaded) {
+      audioPlayer.seek(position);
+    }
+    onUpdateDeck({ position });
+  };
+
+  const handleRestart = () => {
+    if (audioPlayer.state.isLoaded) {
+      audioPlayer.seek(0);
+    }
+    onUpdateDeck({ position: 0 });
+  };
+
+  // Fallback simulation for tracks without audio
   const positionRef = useRef(deck.position);
   positionRef.current = deck.position;
 
-  // Simulate playback position
   useEffect(() => {
-    if (!deck.isPlaying || !deck.track) return;
+    // Only use simulation if no audio is loaded
+    if (audioPlayer.state.isLoaded || !deck.isPlaying || !deck.track) return;
     
     const trackDuration = deck.track.duration;
     const speed = deck.speed;
@@ -40,17 +151,7 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [deck.isPlaying, deck.track?.duration, deck.speed, onUpdateDeck]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleSeek = (position: number) => {
-    onUpdateDeck({ position });
-  };
+  }, [deck.isPlaying, deck.track?.duration, deck.speed, audioPlayer.state.isLoaded]);
 
   // Convert legacy waveform array to WaveformData if needed
   const getWaveformData = (): WaveformData | null => {
@@ -59,12 +160,10 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
     const waveform = deck.track.waveform;
     if (!waveform) return null;
     
-    // Check if it's already WaveformData format
     if (typeof waveform === 'object' && 'points' in waveform) {
       return waveform as WaveformData;
     }
     
-    // Convert legacy number[] to WaveformData
     if (Array.isArray(waveform)) {
       const points = waveform.map(peak => ({
         low: peak * 0.8,
@@ -93,11 +192,22 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
         <div className={cn("font-display text-2xl font-bold", colorClass)}>
           DECK {deckId}
         </div>
-        {deck.track && (
-          <span className={cn("platform-badge", `platform-badge-${deck.track.platform}`)}>
-            {deck.track.platform}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isLoading && (
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          )}
+          {audioPlayer.state.isLoaded && (
+            <span className="text-xs text-green-500">●</span>
+          )}
+          {audioError && (
+            <span className="text-xs text-destructive" title={audioError}>●</span>
+          )}
+          {deck.track && (
+            <span className={cn("platform-badge", `platform-badge-${deck.track.platform}`)}>
+              {deck.track.platform}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Track Info */}
@@ -136,7 +246,7 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
           variant="ghost" 
           size="icon"
           className="hover:bg-muted"
-          onClick={() => onUpdateDeck({ position: 0 })}
+          onClick={handleRestart}
         >
           <SkipBack className="w-5 h-5" />
         </Button>
@@ -147,9 +257,12 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
             "w-14 h-14 rounded-full border-2 transition-all",
             deck.isPlaying ? borderClass : "border-muted"
           )}
-          onClick={() => onUpdateDeck({ isPlaying: !deck.isPlaying })}
+          onClick={handlePlayPause}
+          disabled={isLoading}
         >
-          {deck.isPlaying ? (
+          {isLoading ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : deck.isPlaying ? (
             <Pause className="w-6 h-6" />
           ) : (
             <Play className="w-6 h-6 ml-1" />
