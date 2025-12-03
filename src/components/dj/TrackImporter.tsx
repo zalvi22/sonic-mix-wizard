@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { useLocalDownloader } from './DownloaderSetupBanner';
+import { generateWaveformFromFile, WaveformData } from '@/lib/waveformGenerator';
 
 interface TrackImporterProps {
   onTrackImported: (track: any) => void;
@@ -80,19 +81,35 @@ export const TrackImporter = ({ onTrackImported }: TrackImporterProps) => {
         .from('audio-files')
         .getPublicUrl(filePath);
 
+      // Generate waveform data (Rekordbox-style)
+      setUploadProgress(70);
+      let waveformData: WaveformData | null = null;
+      try {
+        waveformData = await generateWaveformFromFile(file, 150);
+        console.log('Generated waveform with', waveformData.points.length, 'points');
+      } catch (err) {
+        console.warn('Could not generate waveform:', err);
+      }
+
+      setUploadProgress(85);
+
       // Extract title from filename (remove extension and cleanup)
       const title = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
 
       // Create track entry in database
+      const trackData = {
+        title: title,
+        artist: 'Unknown Artist',
+        platform: 'local',
+        audio_file_path: filePath,
+        analysis_status: 'uploaded',
+        waveform: waveformData ? JSON.parse(JSON.stringify(waveformData)) : null,
+        duration: waveformData?.duration ? Math.floor(waveformData.duration) : null,
+      };
+      
       const { data: track, error: insertError } = await supabase
         .from('tracks')
-        .insert({
-          title: title,
-          artist: 'Unknown Artist',
-          platform: 'local',
-          audio_file_path: filePath,
-          analysis_status: 'uploaded',
-        })
+        .insert(trackData)
         .select()
         .single();
 

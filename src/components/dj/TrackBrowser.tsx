@@ -40,6 +40,7 @@ interface DBTrack {
   audio_file_path: string | null;
   analysis_status: string | null;
   stems: any;
+  waveform: any;
 }
 
 export const TrackBrowser = ({ onLoadToDeck, onAddToMashup }: TrackBrowserProps) => {
@@ -70,6 +71,7 @@ export const TrackBrowser = ({ onLoadToDeck, onAddToMashup }: TrackBrowserProps)
           bpm: t.bpm || 120,
           key: t.key || 'Am',
           platform: t.platform as Platform,
+          waveform: t.waveform || undefined, // Pass waveform data
         }));
         setTracks([...convertedTracks, ...DEMO_TRACKS]);
       }
@@ -94,6 +96,7 @@ export const TrackBrowser = ({ onLoadToDeck, onAddToMashup }: TrackBrowserProps)
       bpm: track.bpm || 120,
       key: track.key || 'Am',
       platform: track.platform as Platform,
+      waveform: track.waveform || undefined,
     };
     
     setDbTracks(prev => [track, ...prev]);

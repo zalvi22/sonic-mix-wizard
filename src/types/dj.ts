@@ -1,3 +1,5 @@
+import { WaveformData } from '@/lib/waveformGenerator';
+
 export type Platform = 'spotify' | 'soundcloud' | 'youtube' | 'local';
 
 export interface Track {
@@ -9,7 +11,8 @@ export interface Track {
   key: string;
   platform: Platform;
   coverUrl?: string;
-  waveform?: number[];
+  audioUrl?: string;
+  waveform?: number[] | WaveformData;
 }
 
 export interface DeckState {

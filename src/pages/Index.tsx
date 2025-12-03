@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const DEFAULT_DECK_STATE: DeckState = {
   track: null,
   isPlaying: false,
-  position: 0,
+  position: 0,  // Now in seconds instead of normalized 0-1
   volume: 0.8,
   speed: 1,
   pitch: 0,
