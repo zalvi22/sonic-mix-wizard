@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Repeat, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeckState, Track } from '@/types/dj';
@@ -18,14 +18,21 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
   const color = deckId === 'A' ? 'cyan' : 'magenta';
   const colorClass = deckId === 'A' ? 'neon-text-cyan' : 'neon-text-magenta';
   const borderClass = deckId === 'A' ? 'neon-border-cyan' : 'neon-border-magenta';
+  
+  // Use ref to track position without causing re-renders
+  const positionRef = useRef(deck.position);
+  positionRef.current = deck.position;
 
-  // Simulate playback position (in seconds now, not normalized)
+  // Simulate playback position
   useEffect(() => {
     if (!deck.isPlaying || !deck.track) return;
     
+    const trackDuration = deck.track.duration;
+    const speed = deck.speed;
+    
     const interval = setInterval(() => {
-      const newPosition = deck.position + (0.05 * deck.speed);
-      if (newPosition >= deck.track!.duration) {
+      const newPosition = positionRef.current + (0.05 * speed);
+      if (newPosition >= trackDuration) {
         onUpdateDeck({ position: 0, isPlaying: false });
       } else {
         onUpdateDeck({ position: newPosition });
@@ -33,7 +40,7 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [deck.isPlaying, deck.track, deck.speed, deck.position]);
+  }, [deck.isPlaying, deck.track?.duration, deck.speed, onUpdateDeck]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
