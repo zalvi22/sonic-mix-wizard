@@ -1,6 +1,5 @@
 use rosc::{encoder, OscMessage, OscPacket, OscType};
 use std::net::UdpSocket;
-use tokio::time::{timeout, Duration};
 
 const SONIC_PI_SERVER: &str = "127.0.0.1:4560";
 const SONIC_PI_GUI: &str = "127.0.0.1:4559";

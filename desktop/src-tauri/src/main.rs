@@ -7,7 +7,7 @@ mod downloader;
 mod updater;
 
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::State;
 use serde::{Deserialize, Serialize};
 
 // Application state
