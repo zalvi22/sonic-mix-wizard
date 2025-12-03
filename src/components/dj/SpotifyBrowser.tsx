@@ -19,13 +19,15 @@ import {
   Plus,
   ExternalLink,
   Download,
-  Check
+  Check,
+  ListPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SpotifyBrowserProps {
   onTrackSelect?: (track: Track) => void;
   onAddToMashup?: (track: Track) => void;
+  onAddToQueue?: (track: Track) => void;
 }
 
 interface SpotifyTrack {
@@ -46,7 +48,7 @@ interface SpotifyPlaylist {
   owner: { display_name: string };
 }
 
-export function SpotifyBrowser({ onTrackSelect, onAddToMashup }: SpotifyBrowserProps) {
+export function SpotifyBrowser({ onTrackSelect, onAddToMashup, onAddToQueue }: SpotifyBrowserProps) {
   const { 
     isConnected, 
     isLoading, 
@@ -132,6 +134,11 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup }: SpotifyBrowserP
     downloadAndAddTrack(track, onAddToMashup, 'mashup');
   };
 
+  const handleAddToQueue = (track: SpotifyTrack) => {
+    if (!onAddToQueue) return;
+    downloadAndAddTrack(track, onAddToQueue, 'queue');
+  };
+
   const formatDuration = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
@@ -199,22 +206,37 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup }: SpotifyBrowserP
             </Button>
           ) : (
             <>
-              <Button 
-                size="sm" 
-                variant="default"
-                className="h-7 px-2 text-xs"
-                onClick={() => handleAddToDeck(track)}
-                disabled={isDownloading}
-              >
-                <Play className="w-3 h-3 mr-1" />
-                To Deck
-              </Button>
+              <div className="flex gap-1">
+                <Button 
+                  size="sm" 
+                  variant="default"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => handleAddToDeck(track)}
+                  disabled={isDownloading}
+                  title="Load directly to Deck A"
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Deck
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => handleAddToQueue(track)}
+                  disabled={isDownloading}
+                  title="Add to queue"
+                >
+                  <ListPlus className="w-3 h-3 mr-1" />
+                  Queue
+                </Button>
+              </div>
               <Button 
                 size="sm" 
                 variant="outline"
                 className="h-7 px-2 text-xs"
                 onClick={() => handleAddToMashup(track)}
                 disabled={isDownloading}
+                title="Add to mashup"
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Mashup

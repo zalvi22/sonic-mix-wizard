@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 interface PlatformConnectorProps {
   onTrackSelect?: (track: Track) => void;
   onAddToMashup?: (track: Track) => void;
+  onAddToQueue?: (track: Track) => void;
 }
 
 interface PlatformStatus {
@@ -27,7 +28,7 @@ interface PlatformStatus {
   icon: string;
 }
 
-export const PlatformConnector = ({ onTrackSelect, onAddToMashup }: PlatformConnectorProps) => {
+export const PlatformConnector = ({ onTrackSelect, onAddToMashup, onAddToQueue }: PlatformConnectorProps) => {
   const { isConnected: spotifyConnected, connect: connectSpotify, user: spotifyUser, isLoading: spotifyLoading } = useSpotify();
   const [soundcloudConnected, setSoundcloudConnected] = useState(false);
   const [youtubeConnected, setYoutubeConnected] = useState(false);
@@ -122,6 +123,7 @@ export const PlatformConnector = ({ onTrackSelect, onAddToMashup }: PlatformConn
               <SpotifyBrowser 
                 onTrackSelect={onTrackSelect}
                 onAddToMashup={onAddToMashup}
+                onAddToQueue={onAddToQueue}
               />
             </div>
           </SheetContent>

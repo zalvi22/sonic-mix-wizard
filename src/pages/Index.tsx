@@ -8,6 +8,7 @@ import { MashupBuilder } from '@/components/dj/MashupBuilder';
 import { SonicPiGenerator } from '@/components/dj/SonicPiGenerator';
 import { AIPromptInput } from '@/components/dj/AIPromptInput';
 import { DownloaderSetupBanner } from '@/components/dj/DownloaderSetupBanner';
+import { TrackQueue } from '@/components/dj/TrackQueue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const DEFAULT_DECK_STATE: DeckState = {
@@ -38,6 +39,7 @@ const Index = () => {
   const [mixer, setMixer] = useState<MixerState>(DEFAULT_MIXER_STATE);
   const [mashupElements, setMashupElements] = useState<MashupElement[]>([]);
   const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
+  const [trackQueue, setTrackQueue] = useState<Track[]>([]);
 
   const updateDeckA = useCallback((updates: Partial<DeckState>) => {
     setDeckA(prev => ({ ...prev, ...updates }));
@@ -97,11 +99,30 @@ const Index = () => {
     loadToDeck(track, 'A');
   }, [loadToDeck]);
 
+  const addToQueue = useCallback((track: Track) => {
+    setTrackQueue(prev => [...prev, track]);
+  }, []);
+
+  const removeFromQueue = useCallback((trackId: string) => {
+    setTrackQueue(prev => prev.filter(t => t.id !== trackId));
+  }, []);
+
+  const clearQueue = useCallback(() => {
+    setTrackQueue([]);
+  }, []);
+
+  const loadFromQueueToDeck = useCallback((track: Track, deck: 'A' | 'B') => {
+    loadToDeck(track, deck);
+    // Remove from queue after loading
+    setTrackQueue(prev => prev.filter(t => t.id !== track.id));
+  }, [loadToDeck]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header 
         onTrackSelect={loadToDefaultDeck}
         onAddToMashup={addToMashup}
+        onAddToQueue={addToQueue}
       />
       
       {/* Lossless Download Setup */}
@@ -153,12 +174,21 @@ const Index = () => {
               onCodeGenerated={setAiGeneratedCode}
             />
             
-            {/* Tabs for Mashup and Code */}
-            <Tabs defaultValue="code" className="h-[380px] flex flex-col">
-              <TabsList className="grid grid-cols-2 mb-4">
+            {/* Tabs for Queue, Mashup and Code */}
+            <Tabs defaultValue="queue" className="h-[380px] flex flex-col">
+              <TabsList className="grid grid-cols-3 mb-4">
+                <TabsTrigger value="queue">Queue ({trackQueue.length})</TabsTrigger>
                 <TabsTrigger value="mashup">Mashup</TabsTrigger>
-                <TabsTrigger value="code">Sonic Pi Code</TabsTrigger>
+                <TabsTrigger value="code">Sonic Pi</TabsTrigger>
               </TabsList>
+              <TabsContent value="queue" className="flex-1 mt-0 border border-border rounded-lg overflow-hidden">
+                <TrackQueue
+                  queue={trackQueue}
+                  onLoadToDeck={loadFromQueueToDeck}
+                  onRemoveFromQueue={removeFromQueue}
+                  onClearQueue={clearQueue}
+                />
+              </TabsContent>
               <TabsContent value="mashup" className="flex-1 mt-0">
                 <MashupBuilder 
                   elements={mashupElements}
