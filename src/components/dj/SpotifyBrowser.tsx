@@ -176,70 +176,60 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup, onAddToQueue }: S
     const status = getTrackStatus(track.id);
     
     return (
-      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group">
+      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
         <img 
           src={track.album.images[2]?.url || track.album.images[0]?.url} 
           alt={track.album.name}
-          className="w-12 h-12 rounded object-cover flex-shrink-0"
+          className="w-10 h-10 rounded object-cover flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground line-clamp-1" title={track.name}>
+          <p className="text-sm font-medium text-foreground truncate" title={track.name}>
             {track.name}
           </p>
-          <p className="text-xs text-muted-foreground line-clamp-1" title={track.artists.map(a => a.name).join(', ')}>
-            {track.artists.map(a => a.name).join(', ')}
-          </p>
-          <p className="text-xs text-muted-foreground/70">
-            {formatDuration(track.duration_ms)}
+          <p className="text-xs text-muted-foreground truncate">
+            {track.artists.map(a => a.name).join(', ')} • {formatDuration(track.duration_ms)}
           </p>
         </div>
-        <div className="flex flex-col gap-1 flex-shrink-0">
+        <div className="flex gap-1 flex-shrink-0">
           {status === 'downloading' ? (
-            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled>
-              <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              Loading
+            <Button size="icon" variant="outline" className="h-8 w-8" disabled>
+              <Loader2 className="w-4 h-4 animate-spin" />
             </Button>
           ) : status === 'complete' ? (
-            <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-green-500 border-green-500" disabled>
-              <Check className="w-3 h-3 mr-1" />
-              Added
+            <Button size="icon" variant="outline" className="h-8 w-8 text-green-500 border-green-500" disabled>
+              <Check className="w-4 h-4" />
             </Button>
           ) : (
             <>
-              <div className="flex gap-1">
-                <Button 
-                  size="sm" 
-                  variant="default"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => handleAddToDeck(track)}
-                  disabled={isDownloading}
-                  title="Load directly to Deck A"
-                >
-                  <Play className="w-3 h-3 mr-1" />
-                  Deck
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => handleAddToQueue(track)}
-                  disabled={isDownloading}
-                  title="Add to queue"
-                >
-                  <ListPlus className="w-3 h-3 mr-1" />
-                  Queue
-                </Button>
-              </div>
               <Button 
-                size="sm" 
+                size="icon"
+                variant="default"
+                className="h-8 w-8"
+                onClick={() => handleAddToDeck(track)}
+                disabled={isDownloading}
+                title="Load to Deck A"
+              >
+                <Play className="w-4 h-4" />
+              </Button>
+              <Button 
+                size="icon"
+                variant="secondary"
+                className="h-8 w-8"
+                onClick={() => handleAddToQueue(track)}
+                disabled={isDownloading}
+                title="Add to Queue"
+              >
+                <ListPlus className="w-4 h-4" />
+              </Button>
+              <Button 
+                size="icon"
                 variant="outline"
-                className="h-7 px-2 text-xs"
+                className="h-8 w-8"
                 onClick={() => handleAddToMashup(track)}
                 disabled={isDownloading}
-                title="Add to mashup"
+                title="Add to Mashup"
               >
-                <Plus className="w-3 h-3 mr-1" />
-                Mashup
+                <Plus className="w-4 h-4" />
               </Button>
             </>
           )}
@@ -336,8 +326,8 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup, onAddToQueue }: S
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="playlists" className="flex-1 flex p-4 pt-3 gap-3 min-h-0 mt-0">
-          <ScrollArea className="w-[45%] flex-shrink-0">
+        <TabsContent value="playlists" className="flex-1 flex p-4 pt-3 gap-2 min-h-0 mt-0">
+          <ScrollArea className="w-[40%] flex-shrink-0">
             <div className="space-y-1 pr-2">
               {playlists.map((playlist) => (
                 <PlaylistItem key={playlist.id} playlist={playlist} />
