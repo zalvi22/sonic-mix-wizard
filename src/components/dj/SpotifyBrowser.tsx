@@ -169,67 +169,58 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup }: SpotifyBrowserP
     const status = getTrackStatus(track.id);
     
     return (
-      <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 transition-colors group min-h-[56px]">
+      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group">
         <img 
           src={track.album.images[2]?.url || track.album.images[0]?.url} 
           alt={track.album.name}
-          className="w-10 h-10 rounded object-cover flex-shrink-0"
+          className="w-12 h-12 rounded object-cover flex-shrink-0"
         />
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <p className="text-sm font-medium text-foreground truncate">{track.name}</p>
-          <p className="text-xs text-muted-foreground truncate">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground line-clamp-1" title={track.name}>
+            {track.name}
+          </p>
+          <p className="text-xs text-muted-foreground line-clamp-1" title={track.artists.map(a => a.name).join(', ')}>
             {track.artists.map(a => a.name).join(', ')}
           </p>
+          <p className="text-xs text-muted-foreground/70">
+            {formatDuration(track.duration_ms)}
+          </p>
         </div>
-        <span className="text-xs text-muted-foreground flex-shrink-0 w-10 text-right">
-          {formatDuration(track.duration_ms)}
-        </span>
-        <div className="flex gap-1 flex-shrink-0">
+        <div className="flex flex-col gap-1 flex-shrink-0">
           {status === 'downloading' ? (
-            <Button size="icon" variant="ghost" className="h-8 w-8" disabled>
-              <Loader2 className="w-4 h-4 animate-spin" />
+            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled>
+              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              Loading
             </Button>
           ) : status === 'complete' ? (
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500" disabled>
-              <Check className="w-4 h-4" />
+            <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-green-500 border-green-500" disabled>
+              <Check className="w-3 h-3 mr-1" />
+              Added
             </Button>
           ) : (
             <>
-              {onTrackSelect && (
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleAddToDeck(track)}
-                  disabled={isDownloading}
-                  title="Add to Deck"
-                >
-                  <Play className="w-4 h-4" />
-                </Button>
-              )}
-              {onAddToMashup && (
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleAddToMashup(track)}
-                  disabled={isDownloading}
-                  title="Add to Mashup"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              )}
+              <Button 
+                size="sm" 
+                variant="default"
+                className="h-7 px-2 text-xs"
+                onClick={() => handleAddToDeck(track)}
+                disabled={isDownloading}
+              >
+                <Play className="w-3 h-3 mr-1" />
+                To Deck
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => handleAddToMashup(track)}
+                disabled={isDownloading}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Mashup
+              </Button>
             </>
           )}
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={() => window.open(track.external_urls.spotify, '_blank')}
-            title="Open in Spotify"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </Button>
         </div>
       </div>
     );
