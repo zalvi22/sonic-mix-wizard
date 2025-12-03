@@ -3,6 +3,7 @@ import { Play, Pause, SkipBack, Repeat, Volume2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeckState, Track } from '@/types/dj';
 import { RekordboxWaveform } from './RekordboxWaveform';
+import { AudioVisualizer } from './AudioVisualizer';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { WaveformData } from '@/lib/waveformGenerator';
@@ -227,6 +228,14 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
           </div>
         )}
       </div>
+
+      {/* Audio Visualizer */}
+      <AudioVisualizer 
+        analyserNode={audioPlayer.getAnalyserNode()}
+        isPlaying={deck.isPlaying}
+        color={deckId === 'A' ? 'cyan' : 'magenta'}
+        height={50}
+      />
 
       {/* Rekordbox-style Waveform */}
       <RekordboxWaveform 
