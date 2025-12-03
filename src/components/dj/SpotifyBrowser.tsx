@@ -192,7 +192,11 @@ export function SpotifyBrowser({ onTrackSelect, onAddToMashup, onAddToQueue }: S
         </div>
         <div className="flex gap-1 flex-shrink-0">
           {status === 'downloading' ? (
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled>
+            <Button size="icon" variant="outline" className="h-8 w-8" disabled title="Downloading...">
+              <Loader2 className="w-4 h-4 animate-spin" />
+            </Button>
+          ) : status === 'analyzing' ? (
+            <Button size="icon" variant="outline" className="h-8 w-8 text-cyan-500 border-cyan-500" disabled title="Analyzing waveform...">
               <Loader2 className="w-4 h-4 animate-spin" />
             </Button>
           ) : status === 'complete' ? (

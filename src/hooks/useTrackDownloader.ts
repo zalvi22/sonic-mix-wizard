@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Track, Platform } from '@/types/dj';
+import { generateWaveformFromUrl, WaveformData } from '@/lib/waveformGenerator';
 
 interface SpotifyTrack {
   id: string;
@@ -22,8 +23,21 @@ interface DownloadResult {
 
 export function useTrackDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState<Record<string, 'pending' | 'downloading' | 'complete' | 'error'>>({});
+  const [downloadProgress, setDownloadProgress] = useState<Record<string, 'pending' | 'downloading' | 'complete' | 'error' | 'analyzing'>>({});
   const { toast } = useToast();
+
+  // Generate waveform from audio URL
+  const generateWaveform = async (audioUrl: string): Promise<WaveformData | null> => {
+    try {
+      console.log('Generating waveform from audio URL...');
+      const waveformData = await generateWaveformFromUrl(audioUrl);
+      console.log('Waveform generated:', waveformData.length, 'points');
+      return waveformData;
+    } catch (err) {
+      console.error('Waveform generation failed:', err);
+      return null;
+    }
+  };
 
   const downloadSpotifyTrack = async (spotifyTrack: SpotifyTrack): Promise<DownloadResult> => {
     const trackId = spotifyTrack.id;
@@ -43,6 +57,24 @@ export function useTrackDownloader() {
           .from('audio-files')
           .getPublicUrl(existingTrack.audio_file_path);
 
+        setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
+        
+        // Generate waveform if not already stored
+        let waveformData: WaveformData | null = existingTrack.waveform 
+          ? (existingTrack.waveform as unknown as WaveformData) 
+          : null;
+        if (!waveformData && urlData.publicUrl) {
+          waveformData = await generateWaveform(urlData.publicUrl);
+          
+          // Store waveform in database for future use
+          if (waveformData) {
+            await supabase
+              .from('tracks')
+              .update({ waveform: JSON.parse(JSON.stringify(waveformData)) })
+              .eq('id', existingTrack.id);
+          }
+        }
+
         setDownloadProgress(prev => ({ ...prev, [trackId]: 'complete' }));
         
         return {
@@ -56,6 +88,8 @@ export function useTrackDownloader() {
             key: existingTrack.key || 'Am',
             platform: 'spotify' as Platform,
             coverUrl: spotifyTrack.album.images[0]?.url,
+            audioUrl: urlData.publicUrl,
+            waveform: waveformData || undefined,
           },
           audioUrl: urlData.publicUrl,
         };
@@ -73,6 +107,22 @@ export function useTrackDownloader() {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      // Generate waveform from the downloaded audio
+      setDownloadProgress(prev => ({ ...prev, [trackId]: 'analyzing' }));
+      let waveformData: WaveformData | null = null;
+      
+      if (data.audioUrl) {
+        waveformData = await generateWaveform(data.audioUrl);
+        
+        // Store waveform in database
+        if (waveformData && data.track?.id) {
+          await supabase
+            .from('tracks')
+            .update({ waveform: JSON.parse(JSON.stringify(waveformData)) })
+            .eq('id', data.track.id);
+        }
+      }
+
       setDownloadProgress(prev => ({ ...prev, [trackId]: 'complete' }));
 
       const track: Track = {
@@ -84,6 +134,8 @@ export function useTrackDownloader() {
         key: data.track?.key || 'Am',
         platform: 'spotify' as Platform,
         coverUrl: spotifyTrack.album.images[0]?.url,
+        audioUrl: data.audioUrl,
+        waveform: waveformData || undefined,
       };
 
       return {
