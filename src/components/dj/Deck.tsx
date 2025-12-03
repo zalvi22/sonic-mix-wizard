@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Repeat, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeckState, Track } from '@/types/dj';
-import { Waveform } from './Waveform';
+import { RekordboxWaveform } from './RekordboxWaveform';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { WaveformData } from '@/lib/waveformGenerator';
 
 interface DeckProps {
   deckId: 'A' | 'B';
@@ -18,24 +19,64 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
   const colorClass = deckId === 'A' ? 'neon-text-cyan' : 'neon-text-magenta';
   const borderClass = deckId === 'A' ? 'neon-border-cyan' : 'neon-border-magenta';
 
-  // Simulate playback position
+  // Simulate playback position (in seconds now, not normalized)
   useEffect(() => {
     if (!deck.isPlaying || !deck.track) return;
     
     const interval = setInterval(() => {
-      onUpdateDeck({
-        position: (deck.position + 0.001 * deck.speed) % 1
-      });
+      const newPosition = deck.position + (0.05 * deck.speed);
+      if (newPosition >= deck.track!.duration) {
+        onUpdateDeck({ position: 0, isPlaying: false });
+      } else {
+        onUpdateDeck({ position: newPosition });
+      }
     }, 50);
 
     return () => clearInterval(interval);
-  }, [deck.isPlaying, deck.track, deck.speed]);
+  }, [deck.isPlaying, deck.track, deck.speed, deck.position]);
 
-  const formatTime = (position: number, duration: number) => {
-    const seconds = Math.floor(position * duration);
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (position: number) => {
+    onUpdateDeck({ position });
+  };
+
+  // Convert legacy waveform array to WaveformData if needed
+  const getWaveformData = (): WaveformData | null => {
+    if (!deck.track) return null;
+    
+    const waveform = deck.track.waveform;
+    if (!waveform) return null;
+    
+    // Check if it's already WaveformData format
+    if (typeof waveform === 'object' && 'points' in waveform) {
+      return waveform as WaveformData;
+    }
+    
+    // Convert legacy number[] to WaveformData
+    if (Array.isArray(waveform)) {
+      const points = waveform.map(peak => ({
+        low: peak * 0.8,
+        mid: peak * 0.6,
+        high: peak * 0.4,
+        peak: peak,
+      }));
+      
+      return {
+        version: 1,
+        sampleRate: 44100,
+        samplesPerPoint: 256,
+        length: points.length,
+        duration: deck.track.duration,
+        points,
+      };
+    }
+    
+    return null;
   };
 
   return (
@@ -70,24 +111,17 @@ export const Deck = ({ deckId, deck, onUpdateDeck }: DeckProps) => {
         )}
       </div>
 
-      {/* Waveform */}
-      <Waveform 
-        data={deck.track?.waveform}
+      {/* Rekordbox-style Waveform */}
+      <RekordboxWaveform 
+        waveformData={getWaveformData()}
+        duration={deck.track?.duration || 0}
         position={deck.position}
         isPlaying={deck.isPlaying}
-        color={color}
-        className="h-24"
+        onSeek={handleSeek}
+        height={80}
+        colorMode="frequency"
+        showTimeline={true}
       />
-
-      {/* Time Display */}
-      <div className="flex justify-between text-sm font-mono">
-        <span className={colorClass}>
-          {deck.track ? formatTime(deck.position, deck.track.duration) : '0:00'}
-        </span>
-        <span className="text-muted-foreground">
-          {deck.track ? formatTime(1, deck.track.duration) : '0:00'}
-        </span>
-      </div>
 
       {/* Transport Controls */}
       <div className="flex items-center justify-center gap-2">
