@@ -166,8 +166,10 @@ export function useTrackDownloader() {
       let audioUrl = data?.audioUrl;
       let waveformData: WaveformData | null = null;
 
-      // If no audio from download, use Spotify preview URL as fallback
-      if (!audioUrl && spotifyTrack.preview_url) {
+      // If edge function failed or no audio, use Spotify preview URL as fallback
+      if ((error || !audioUrl) && spotifyTrack.preview_url) {
+        console.log('Edge function failed or no audio, using Spotify preview URL as fallback');
+        audioUrl = spotifyTrack.preview_url;
         console.log('Using Spotify preview URL as fallback');
         audioUrl = spotifyTrack.preview_url;
         updateDownloadItem(trackId, { 
@@ -306,22 +308,29 @@ export function useTrackDownloader() {
     setIsDownloading(false);
 
     if (result.success && result.track) {
+      const isPreview = result.audioUrl?.includes('p.scdn.co') || result.audioUrl?.includes('preview');
       toast({
-        title: 'Track ready!',
-        description: result.audioUrl 
-          ? `"${spotifyTrack.name}" downloaded and added to ${actionLabel}`
-          : `"${spotifyTrack.name}" added to ${actionLabel} (audio pending)`,
+        title: isPreview ? 'Track ready (preview)' : 'Track ready!',
+        description: isPreview 
+          ? `"${spotifyTrack.name}" - 30s preview loaded` 
+          : `"${spotifyTrack.name}" added to ${actionLabel}`,
       });
       onSuccess(result.track);
     } else {
-      toast({
-        title: 'Download issue',
-        description: result.error || 'Track added but audio may not be available',
-        variant: 'destructive',
-      });
       // Still add the track even if download failed
       if (result.track) {
+        toast({
+          title: 'No audio available',
+          description: `"${spotifyTrack.name}" added without audio - this track has no preview`,
+          variant: 'destructive',
+        });
         onSuccess(result.track);
+      } else {
+        toast({
+          title: 'Download failed',
+          description: result.error || 'Could not load track',
+          variant: 'destructive',
+        });
       }
     }
   };
