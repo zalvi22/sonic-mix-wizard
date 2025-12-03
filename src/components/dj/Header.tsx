@@ -6,9 +6,10 @@ import { Track } from '@/types/dj';
 interface HeaderProps {
   onTrackSelect?: (track: Track) => void;
   onAddToMashup?: (track: Track) => void;
+  onAddToQueue?: (track: Track) => void;
 }
 
-export const Header = ({ onTrackSelect, onAddToMashup }: HeaderProps) => {
+export const Header = ({ onTrackSelect, onAddToMashup, onAddToQueue }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
       {/* Logo */}
@@ -33,6 +34,7 @@ export const Header = ({ onTrackSelect, onAddToMashup }: HeaderProps) => {
         <PlatformConnector 
           onTrackSelect={onTrackSelect}
           onAddToMashup={onAddToMashup}
+          onAddToQueue={onAddToQueue}
         />
       </div>
 
