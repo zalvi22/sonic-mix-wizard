@@ -1,10 +1,52 @@
-# SonicMix Local Download Server
+# SonicMix Local Downloader & TunePat Integration
 
 Download music from YouTube, Spotify, and SoundCloud in lossless quality.
+**Now with TunePat integration!**
 
-## macOS - One Click Setup
+---
 
-### Quick Start
+## 🎵 TunePat Integration (Recommended)
+
+If you have TunePat on your Mac, you can automatically sync your TunePat downloads to SonicMix.
+
+### Quick Setup
+
+1. **Install dependencies** (one time):
+   ```bash
+   cd scripts/local_downloader
+   pip3 install watchdog requests python-dotenv
+   ```
+
+2. **Configure** - Copy `.env.example` to `.env` and set:
+   ```bash
+   TUNEPAT_OUTPUT_DIR=~/Music/TunePat Spotify Converter
+   SUPABASE_URL=https://guvcwvqkxnrwcdmwbifh.supabase.co
+   SUPABASE_SERVICE_KEY=your_service_role_key_here
+   ```
+   
+   > Find your TunePat output folder in TunePat → Settings → Output
+
+3. **Run the watcher**:
+   ```bash
+   python3 tunepat_watcher.py
+   ```
+
+4. **Download in TunePat as normal** - files are automatically:
+   - ✅ Detected when TunePat finishes downloading
+   - ✅ Uploaded to cloud storage
+   - ✅ Added to your SonicMix library
+
+### How it works
+
+The watcher monitors your TunePat output folder. When you download songs in TunePat, they're automatically uploaded to SonicMix's cloud storage and added to your library. It also scans existing files on startup.
+
+---
+
+## 🎬 YouTube/URL Downloads
+
+Download from YouTube, SoundCloud, and other URLs.
+
+### macOS - One Click Setup
 
 1. **Download** this folder to your Mac
 
@@ -22,12 +64,6 @@ That's it! The script will:
 - ✅ Start the server and copy the URL to your clipboard
 
 Just paste the URL into SonicMix!
-
-The installer will automatically set up:
-- Python 3
-- FFmpeg (for audio conversion)
-- ngrok (for secure tunneling)
-- All required Python packages
 
 ### 2. Configure ngrok (One-time)
 
@@ -99,18 +135,22 @@ SUPABASE_SERVICE_KEY=your_service_key_here
 
 # Auto-upload to cloud storage
 UPLOAD_TO_CLOUD=true
+
+# TunePat Integration
+TUNEPAT_OUTPUT_DIR=~/Music/TunePat Spotify Converter
 ```
 
 ---
 
 ## Supported Sources
 
-| Platform | Support |
-|----------|---------|
-| YouTube | ✅ Direct URLs |
-| YouTube Music | ✅ Direct URLs |
-| Spotify | ✅ Via YouTube search |
-| SoundCloud | ✅ Direct URLs |
+| Source | Method | Quality |
+|--------|--------|---------|
+| TunePat | Folder watcher | Lossless (whatever TunePat outputs) |
+| YouTube | Direct URLs | WAV/MP3 |
+| YouTube Music | Direct URLs | WAV/MP3 |
+| Spotify | Via YouTube search | WAV/MP3 |
+| SoundCloud | Direct URLs | WAV/MP3 |
 
 ---
 
@@ -128,10 +168,23 @@ Run: `chmod +x *.command`
 ### Server won't start
 Check if port 5000 is in use: `lsof -i :5000`
 
+### TunePat files not syncing
+- Check that `TUNEPAT_OUTPUT_DIR` matches your TunePat output folder
+- Make sure the watcher script is running
+- Check the terminal for error messages
+
 ---
 
 ## How It Works
 
+### TunePat Integration
+1. You download songs in TunePat
+2. The watcher detects new files in TunePat's output folder
+3. Files are uploaded to your cloud storage
+4. Track entries are created in your SonicMix library
+5. Refresh SonicMix to see your new tracks
+
+### URL Downloads
 1. You paste a track URL in SonicMix
 2. SonicMix sends the URL to your local server (via ngrok)
 3. The server downloads the audio in lossless WAV format
