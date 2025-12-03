@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ExternalLink, Check, Server, Music, Cloud, HardDrive, LogIn, Copy, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Platform } from '@/types/dj';
+import { Platform, Track } from '@/types/dj';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
+interface PlatformConnectorProps {
+  onTrackSelect?: (track: Track) => void;
+  onAddToMashup?: (track: Track) => void;
+}
+
 interface PlatformStatus {
   platform: Platform;
   connected: boolean;
@@ -22,7 +27,7 @@ interface PlatformStatus {
   icon: string;
 }
 
-export const PlatformConnector = () => {
+export const PlatformConnector = ({ onTrackSelect, onAddToMashup }: PlatformConnectorProps) => {
   const { isConnected: spotifyConnected, connect: connectSpotify, user: spotifyUser, isLoading: spotifyLoading } = useSpotify();
   const [soundcloudConnected, setSoundcloudConnected] = useState(false);
   const [youtubeConnected, setYoutubeConnected] = useState(false);
@@ -109,11 +114,16 @@ export const PlatformConnector = () => {
               </Badge>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[500px] sm:w-[600px] p-0">
+          <SheetContent side="right" className="w-[90vw] max-w-[600px] p-0 flex flex-col">
             <SheetHeader className="sr-only">
               <SheetTitle>Spotify Browser</SheetTitle>
             </SheetHeader>
-            <SpotifyBrowser />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <SpotifyBrowser 
+                onTrackSelect={onTrackSelect}
+                onAddToMashup={onAddToMashup}
+              />
+            </div>
           </SheetContent>
         </Sheet>
       ) : (

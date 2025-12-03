@@ -92,9 +92,17 @@ const Index = () => {
     );
   }, []);
 
+  const loadToDefaultDeck = useCallback((track: Track) => {
+    // Load to deck A by default when selecting from Spotify
+    loadToDeck(track, 'A');
+  }, [loadToDeck]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      <Header 
+        onTrackSelect={loadToDefaultDeck}
+        onAddToMashup={addToMashup}
+      />
       
       {/* Lossless Download Setup */}
       <DownloaderSetupBanner />
