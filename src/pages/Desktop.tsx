@@ -1,10 +1,16 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Download, Music, FolderSync, Zap, Github, Apple, Terminal } from 'lucide-react';
+import { ArrowLeft, Monitor, Download, Music, FolderSync, Zap, Github, Apple, Terminal, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function Desktop() {
   const navigate = useNavigate();
+
+  // TODO: Replace with your actual GitHub repo URL after connecting
+  const GITHUB_REPO = ''; // e.g., 'https://github.com/username/sonicmix'
+  const LATEST_RELEASE_URL = GITHUB_REPO ? `${GITHUB_REPO}/releases/latest` : '';
+  const DMG_DOWNLOAD_URL = GITHUB_REPO ? `${GITHUB_REPO}/releases/latest/download/SonicMix.dmg` : '';
 
   const features = [
     {
@@ -79,60 +85,67 @@ export default function Desktop() {
           <div className="flex items-center gap-3 mb-6">
             <Apple className="h-8 w-8 text-foreground" />
             <div>
-              <h3 className="text-xl font-display text-foreground">macOS</h3>
+              <h3 className="text-xl font-display text-foreground">macOS Download</h3>
               <p className="text-sm text-muted-foreground">Requires macOS 10.15+</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-3">
-                Clone the repo and run the setup script:
+          {DMG_DOWNLOAD_URL ? (
+            <div className="space-y-4">
+              <Button 
+                className="w-full gap-2 text-lg py-6"
+                onClick={() => window.open(DMG_DOWNLOAD_URL, '_blank')}
+              >
+                <Download className="h-5 w-5" />
+                Download SonicMix.dmg
+              </Button>
+              <p className="text-sm text-muted-foreground text-center">
+                Just download, open, and drag to Applications folder
               </p>
-              <code className="block p-3 rounded bg-background text-sm font-mono text-primary">
-                cd desktop && ./setup.sh
-              </code>
             </div>
-
-            <Button 
-              className="w-full gap-2"
-              onClick={() => window.open('https://github.com', '_blank')}
-            >
-              <Github className="h-4 w-4" />
-              View on GitHub
-            </Button>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <Alert className="border-primary/50 bg-primary/5">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm">
+                  <strong>No release available yet.</strong> To get the desktop app:
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Connect your GitHub account in Lovable (top-right button)</li>
+                    <li>Create a release tag (e.g., <code className="bg-muted px-1 rounded">v1.0.0</code>)</li>
+                    <li>GitHub Actions will automatically build the .dmg</li>
+                    <li>Return here to download!</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
+              
+              <Button 
+                variant="outline"
+                className="w-full gap-2"
+                disabled={!GITHUB_REPO}
+                onClick={() => LATEST_RELEASE_URL && window.open(LATEST_RELEASE_URL, '_blank')}
+              >
+                <Github className="h-4 w-4" />
+                {GITHUB_REPO ? 'View Releases on GitHub' : 'Connect GitHub First'}
+              </Button>
+            </div>
+          )}
         </Card>
 
-        {/* Build Instructions */}
+        {/* Developer Section */}
         <Card className="deck-panel p-6">
           <div className="flex items-center gap-3 mb-4">
             <Terminal className="h-5 w-5 text-primary" />
-            <h3 className="font-display text-foreground">Build from Source</h3>
+            <h3 className="font-display text-foreground">For Developers</h3>
           </div>
           
+          <p className="text-sm text-muted-foreground mb-4">
+            Want to build from source or contribute? Clone the repo and run:
+          </p>
+          
           <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-3">
-              <span className="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono">1</span>
-              <div>
-                <p className="text-foreground">Install prerequisites</p>
-                <code className="text-muted-foreground">brew install rust node yt-dlp ffmpeg</code>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono">2</span>
-              <div>
-                <p className="text-foreground">Run setup</p>
-                <code className="text-muted-foreground">cd desktop && ./setup.sh</code>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono">3</span>
-              <div>
-                <p className="text-foreground">Build .dmg installer</p>
-                <code className="text-muted-foreground">npm run tauri build</code>
-              </div>
-            </div>
+            <code className="block p-3 rounded bg-background text-primary font-mono">
+              cd desktop && ./setup.sh && npm run tauri build
+            </code>
           </div>
         </Card>
       </main>
