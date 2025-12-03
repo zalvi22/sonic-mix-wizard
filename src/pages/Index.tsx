@@ -10,6 +10,7 @@ import { AIPromptInput } from '@/components/dj/AIPromptInput';
 import { DownloaderSetupBanner } from '@/components/dj/DownloaderSetupBanner';
 import { TrackQueue } from '@/components/dj/TrackQueue';
 import { DownloadProgress } from '@/components/dj/DownloadProgress';
+import { UpdateNotification } from '@/components/dj/UpdateNotification';
 import { useTrackDownloaderContext } from '@/contexts/TrackDownloaderContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -226,6 +227,9 @@ const Index = () => {
         onDismiss={dismissDownload}
         onClearCompleted={clearCompletedDownloads}
       />
+      
+      {/* Desktop Update Notification */}
+      <UpdateNotification />
     </div>
   );
 };
