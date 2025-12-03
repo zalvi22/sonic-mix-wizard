@@ -1,0 +1,119 @@
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install yt-dlp and ffmpeg
+        run: brew install yt-dlp ffmpeg
+
+      - name: Copy frontend to desktop
+        run: |
+          # Create directories
+          mkdir -p desktop/src/components
+          mkdir -p desktop/src/hooks
+          mkdir -p desktop/src/contexts
+          mkdir -p desktop/src/pages
+          mkdir -p desktop/src/types
+          mkdir -p desktop/src/integrations
+          mkdir -p desktop/src/lib
+          mkdir -p desktop/src/assets
+          mkdir -p desktop/public
+          
+          # Copy source files
+          cp -R src/components/* desktop/src/components/ || true
+          cp -R src/hooks/* desktop/src/hooks/ || true
+          cp -R src/contexts/* desktop/src/contexts/ || true
+          cp -R src/pages/* desktop/src/pages/ || true
+          cp -R src/types/* desktop/src/types/ || true
+          cp -R src/integrations/* desktop/src/integrations/ || true
+          cp -R src/lib/* desktop/src/lib/ || true
+          cp -R src/assets/* desktop/src/assets/ || true
+          cp -R public/* desktop/public/ || true
+          
+          # Copy root files
+          cp src/App.tsx desktop/src/
+          cp src/App.css desktop/src/ || true
+          cp src/main.tsx desktop/src/
+          cp src/index.css desktop/src/
+          cp src/vite-env.d.ts desktop/src/ || true
+          cp index.html desktop/
+          cp tailwind.config.ts desktop/
+          cp postcss.config.js desktop/
+          cp tsconfig.json desktop/
+          cp tsconfig.app.json desktop/ || true
+          cp tsconfig.node.json desktop/ || true
+          cp components.json desktop/ || true
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: desktop
+        run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SonicMix-macOS-dmg
+          path: desktop/src-tauri/target/release/bundle/dmg/*.dmg
+
+      - name: Upload app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: SonicMix-macOS-app
+          path: desktop/src-tauri/target/release/bundle/macos/*.app
+
+  release:
+    needs: build-macos
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/SonicMix-macOS-dmg/*.dmg
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
