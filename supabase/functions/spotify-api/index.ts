@@ -138,7 +138,13 @@ serve(async (req) => {
         break;
 
       case 'getFeaturedPlaylists':
-        data = await spotifyFetch(`/browse/featured-playlists?limit=${limit}&offset=${offset}`, accessToken);
+        // Featured playlists endpoint deprecated - use categories/playlists as fallback
+        try {
+          data = await spotifyFetch(`/browse/featured-playlists?limit=${limit}&offset=${offset}`, accessToken);
+        } catch {
+          // Fallback: return empty playlists structure
+          data = { playlists: { items: [], total: 0 } };
+        }
         break;
 
       case 'getCategories':

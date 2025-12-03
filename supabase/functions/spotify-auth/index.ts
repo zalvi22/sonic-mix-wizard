@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, code, redirectUri } = await req.json();
+    const { action, code, redirectUri, refreshToken } = await req.json();
     const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
     const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET');
 
@@ -67,7 +67,7 @@ serve(async (req) => {
     }
 
     if (action === 'refreshToken') {
-      const { refreshToken } = await req.json();
+      if (!refreshToken) throw new Error('Refresh token required');
       const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
