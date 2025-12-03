@@ -4,6 +4,7 @@
 mod sonic_pi;
 mod tunepat_watcher;
 mod downloader;
+mod updater;
 
 use std::sync::Mutex;
 use tauri::{Manager, State};
@@ -110,6 +111,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
             sonic_pi_connected: Mutex::new(false),
             tunepat_watching: Mutex::new(false),
@@ -125,6 +127,8 @@ fn main() {
             tunepat_get_default_path,
             download_track,
             check_ytdlp,
+            updater::check_for_updates,
+            updater::install_update,
         ])
         .setup(|app| {
             #[cfg(debug_assertions)]

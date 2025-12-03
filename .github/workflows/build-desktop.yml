@@ -93,6 +93,12 @@ jobs:
           name: SonicMix-macOS-app
           path: desktop/src-tauri/target/release/bundle/macos/*.app
 
+      - name: Upload update signature
+        uses: actions/upload-artifact@v4
+        with:
+          name: SonicMix-macOS-sig
+          path: desktop/src-tauri/target/release/bundle/macos/*.app.tar.gz*
+
   release:
     needs: build-macos
     runs-on: ubuntu-latest
@@ -107,11 +113,51 @@ jobs:
         with:
           path: artifacts
 
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate latest.json for updater
+        run: |
+          # Find the signature file
+          SIG_FILE=$(find artifacts -name "*.sig" | head -1)
+          SIGNATURE=""
+          if [ -f "$SIG_FILE" ]; then
+            SIGNATURE=$(cat "$SIG_FILE")
+          fi
+          
+          # Find the tar.gz file
+          TAR_FILE=$(find artifacts -name "*.app.tar.gz" | head -1)
+          TAR_NAME=$(basename "$TAR_FILE" 2>/dev/null || echo "SonicMix.app.tar.gz")
+          
+          cat > artifacts/latest.json << EOF
+          {
+            "version": "${{ steps.get_version.outputs.VERSION }}",
+            "notes": "See the release notes on GitHub",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-x86_64": {
+                "signature": "${SIGNATURE}",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/${TAR_NAME}"
+              },
+              "darwin-aarch64": {
+                "signature": "${SIGNATURE}",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/${TAR_NAME}"
+              }
+            }
+          }
+          EOF
+          
+          cat artifacts/latest.json
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/SonicMix-macOS-dmg/*.dmg
+            artifacts/SonicMix-macOS-sig/*.app.tar.gz
+            artifacts/SonicMix-macOS-sig/*.app.tar.gz.sig
+            artifacts/latest.json
           draft: false
           prerelease: false
           generate_release_notes: true

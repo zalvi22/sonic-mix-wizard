@@ -10,6 +10,14 @@ export interface PlatformCapabilities {
   fileSystemAccess: boolean;
 }
 
+export interface UpdateInfo {
+  available: boolean;
+  version: string | null;
+  current_version: string;
+  body: string | null;
+  date: string | null;
+}
+
 declare global {
   interface Window {
     __TAURI__?: {
@@ -71,4 +79,13 @@ export async function tauriListen<T>(
   }
   
   return window.__TAURI__.event.listen<T>(event, (e) => callback(e.payload));
+}
+
+// Updater functions
+export async function checkForUpdates(): Promise<UpdateInfo> {
+  return tauriInvoke<UpdateInfo>('check_for_updates');
+}
+
+export async function installUpdate(): Promise<void> {
+  return tauriInvoke<void>('install_update');
 }
