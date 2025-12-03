@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Download, Music, FolderSync, Zap, Apple, Shield } from 'lucide-react';
+import { ArrowLeft, Monitor, Download, Music, FolderSync, Zap, Apple, Shield, RefreshCw, Cpu, HardDrive, MemoryStick, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -8,7 +8,7 @@ const GITHUB_REPO = 'https://github.com/zalvi22/sonic-mix-wizard';
 export default function Desktop() {
   const navigate = useNavigate();
 
-  const dmgDownloadUrl = `${GITHUB_REPO}/releases/latest/download/SonicMix.dmg`;
+  const releasesUrl = `${GITHUB_REPO}/releases`;
 
   const features = [
     {
@@ -31,6 +31,13 @@ export default function Desktop() {
       title: 'Native Performance',
       description: 'Fast Tauri-powered app',
     },
+  ];
+
+  const systemRequirements = [
+    { icon: Apple, label: 'macOS', value: '10.15 Catalina or later' },
+    { icon: Cpu, label: 'Processor', value: 'Apple Silicon or Intel Core i5+' },
+    { icon: MemoryStick, label: 'RAM', value: '8GB minimum, 16GB recommended' },
+    { icon: HardDrive, label: 'Storage', value: '500MB + space for audio files' },
   ];
 
   return (
@@ -62,7 +69,7 @@ export default function Desktop() {
         </div>
 
         {/* Download Card */}
-        <Card className="deck-panel p-8 mb-8">
+        <Card className="deck-panel p-8 mb-6">
           <div className="flex items-center justify-center gap-3 mb-6">
             <Apple className="h-10 w-10 text-foreground" />
             <div className="text-left">
@@ -74,10 +81,21 @@ export default function Desktop() {
           <Button 
             size="lg"
             className="w-full gap-3 text-lg py-7 mb-4"
-            onClick={() => window.open(dmgDownloadUrl, '_blank')}
+            onClick={() => window.open(releasesUrl, '_blank')}
           >
             <Download className="h-6 w-6" />
-            Download SonicMix.dmg
+            Download Latest Release
+          </Button>
+
+          {/* Check for Updates */}
+          <Button 
+            variant="outline"
+            className="w-full gap-2 mb-4"
+            onClick={() => window.open(releasesUrl, '_blank')}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Check for Updates
+            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
           </Button>
 
           {/* Installation steps */}
@@ -85,19 +103,45 @@ export default function Desktop() {
             <p className="text-sm font-medium text-foreground mb-3">Installation:</p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">1</span>
-              <span>Open the downloaded .dmg file</span>
+              <span>Download the .dmg file from releases</span>
             </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">2</span>
-              <span>Drag SonicMix to Applications folder</span>
+              <span>Open and drag SonicMix to Applications</span>
             </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">3</span>
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />
-                <span>Click "Open Anyway" when prompted (first launch only)</span>
+                <span>Allow in System Settings → Privacy (first launch)</span>
               </div>
             </div>
+          </div>
+        </Card>
+
+        {/* System Requirements */}
+        <Card className="deck-panel p-6 mb-6">
+          <h3 className="font-display text-foreground mb-4 flex items-center gap-2">
+            <Cpu className="h-5 w-5 text-primary" />
+            System Requirements
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {systemRequirements.map((req) => (
+              <div key={req.label} className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <req.icon className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{req.label}</p>
+                  <p className="text-sm text-foreground">{req.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-xs text-muted-foreground">
+              <span className="text-primary font-medium">Recommended:</span> Apple Silicon Mac with 16GB RAM for real-time audio processing and stem separation.
+            </p>
           </div>
         </Card>
 
